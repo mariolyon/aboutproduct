@@ -10,6 +10,7 @@ trait AppScalaJSModule extends AppScalaModule with ScalaJSModule {
 
 object shared extends Module {
   trait SharedModule extends AppScalaModule with PlatformScalaModule {
+    override def moduleDir = super.moduleDir / os.up / "modules" / "shared"
     def mvnDeps = Seq(
       mvn"com.softwaremill.sttp.tapir::tapir-core::1.13.6"
     )
@@ -19,12 +20,12 @@ object shared extends Module {
 }
 
 object backend extends AppScalaModule {
+  override def moduleDir = super.moduleDir / os.up / "modules" / "backend"
   def moduleDeps = Seq(shared.jvm)
   def mvnDeps = Seq(
     mvn"com.softwaremill.sttp.tapir::tapir-netty-server-sync:1.13.6",
     mvn"com.softwaremill.sttp.tapir::tapir-files:1.13.6"
   )
-
   def resources = Task {
     os.makeDir.all(Task.dest / "webapp")
     val jsPath = webapp.fastLinkJS().dest.path

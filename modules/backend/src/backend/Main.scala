@@ -10,9 +10,8 @@ import shared.Endpoints
   val greetServerEndpoint =
     Endpoints.greetEndpoint.handleSuccess(name => s"Hello, $name!")
 
-  val staticDir = Thread.currentThread().getContextClassLoader.getResource("webapp").getPath
-
-  val staticEndpoints = staticFilesGetServerEndpoint[sttp.shared.Identity](emptyInput)(staticDir)
+  val classLoader = Thread.currentThread().getContextClassLoader
+  val staticEndpoints = staticResourcesGetServerEndpoint[sttp.shared.Identity](emptyInput)(classLoader, "webapp")
 
   supervised:
     NettySyncServer()
