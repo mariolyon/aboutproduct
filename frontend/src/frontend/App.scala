@@ -1,4 +1,4 @@
-package webapp
+package frontend
 
 import com.raquo.laminar.api.L.{*, given}
 import org.scalajs.dom

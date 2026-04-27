@@ -1,9 +1,9 @@
 ---
-description: Standards for Backend development using Ox, Tapir, and jOOQ
-globs: ["modules/backend/**/*.scala"]
+description: Standards for Backend development using Ox, Tapir
+globs: ["backend/**/*.scala"]
 ---
 
-# Backend Standards (Ox, Tapir, jOOQ)
+# Backend Standards (Ox, Tapir)
 
 ## Concurrency with Ox
 - Prefer **direct style** over Monadic (F[_]) styles.
@@ -15,9 +15,3 @@ globs: ["modules/backend/**/*.scala"]
 - Define endpoints separately from business logic.
 - Use `endpoint` to describe the API and `ServerInterpreter` to implement it.
 - Ensure all endpoints are documented (OpenAPI/Swagger).
-
-## Database with jOOQ
-- Use jOOQ's typesafe DSL for all queries.
-- Keep SQL logic within repository layers.
-- Ensure database transactions are handled correctly, ideally using Ox-friendly patterns.
-- Follow a "Schema-first" approach: update SQL migrations and then regenerate jOOQ classes.

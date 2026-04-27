@@ -1,6 +1,6 @@
 ---
 description: Standards for Frontend development using Laminar, Scala.js, and LaminarRouter
-globs: ["webapp/**/*.scala"]
+globs: ["frontend/**/*.scala"]
 ---
 
 # Frontend Standards (Laminar & Scala.js)
