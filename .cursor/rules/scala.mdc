@@ -1,0 +1,23 @@
+---
+description: Standards for Scala 3.3 and Mill build tool
+globs: ["**/*.scala", "build.sc"]
+---
+
+# Scala 3 & Mill Standards
+
+## Scala 3 Syntax
+- Use **significant indentation** (no braces where possible).
+- Use `?` for wildcards instead of `_`.
+- Prefer `extension` methods for adding functionality to existing types.
+- Use `enum` for ADTs.
+- Avoid `implicit` keyword; use `using`, `given`, and `extension`.
+
+## Mill Build Tool
+- Define modules clearly in `build.sc`.
+- Use `T { ... }` for tasks and `def` for configurations.
+- Ensure dependencies are organized and versions are centralized if possible.
+
+## Code Quality
+- All public methods must have explicit return types.
+- Favor `immutable` collections.
+- Use `Option` or `Either` for error handling; avoid throwing exceptions for control flow.

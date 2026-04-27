@@ -1,0 +1,22 @@
+# Project Rules: aboutproduct
+
+## Tech Stack
+- **Build Tool:** Mill
+- **Language:** Scala 3.3 (LTS)
+- **Concurrency:** Ox (Direct Style)
+- **API:** Tapir
+- **Database:** jOOQ
+- **Frontend:** Laminar & Scala.js
+- **Routing:** LaminarRouter
+
+## General Guidelines
+- Prefer **direct style** Scala using Ox for concurrency.
+- Adhere to Scala 3 syntax (significant indentation, `enum`, `extension`, etc.).
+- Ensure types are explicit for public APIs.
+- Follow functional programming principles where appropriate, but favor readability and the "Direct Style" ecosystem.
+- Use Mill for all build and task management.
+
+## Directory Structure
+- `modules/` - Backend and shared modules.
+- `webapp/` - Laminar/Scala.js frontend.
+- `db/` - jOOQ generated code and migrations.

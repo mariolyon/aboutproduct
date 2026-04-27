@@ -1,0 +1,76 @@
+{
+  "nutrition_facts_label": {
+    "title": "verbatim-string",
+    "servings_per_container": "integer",
+    "serving_size": [
+      {
+        "quantity": "number",
+        "quantity_unit": "verbatim-string"
+      }
+    ],
+    "calories": "integer",
+    "total_fat": {
+      "quantity": "integer",
+      "quantity_unit": "verbatim-string",
+      "percentage_daily_value": "integer"
+    },
+    "saturated_fat": {
+      "quantity": "integer",
+      "quantity_unit": "verbatim-string",
+      "percentage_daily_value": "integer"
+    },
+    "trans_fat": {
+      "quantity": "integer",
+      "quantity_unit": "verbatim-string",
+      "percentage_daily_value": "integer"
+    },
+    "cholesterol": {
+      "quantity": "integer",
+      "quantity_unit": "verbatim-string",
+      "percentage_daily_value": "integer"
+    },
+    "sodium": {
+      "quantity": "integer",
+      "quantity_unit": "verbatim-string",
+      "percentage_daily_value": "integer"
+    },
+    "carbs": {
+      "total": {
+        "quantity": "integer",
+        "quantity_unit": "verbatim-string",
+        "percentage_daily_value": "integer"
+      },
+      "fiber": {
+        "quantity": "integer",
+        "quantity_unit": "verbatim-string",
+        "percentage_daily_value": "integer"
+      },
+      "sugars": {
+        "total": {
+          "quantity": "integer",
+          "quantity_unit": "verbatim-string",
+          "percentage_daily_value": "integer"
+        },
+        "added": {
+          "quantity": "integer",
+          "quantity_unit": "verbatim-string",
+          "percentage_daily_value": "integer"
+        }
+      }
+    },
+    "protein": {
+      "quantity": "integer",
+      "quantity_unit": "verbatim-string",
+      "percentage_daily_value": "integer"
+    },
+    "nutrients": [
+      {
+        "name": "verbatim-string",
+        "quantity_unit": "verbatim-string",
+        "quantity": "number",
+        "percentage_daily_value": "integer"
+      }
+    ],
+    "small_print": "verbatim-string"
+  }
+}

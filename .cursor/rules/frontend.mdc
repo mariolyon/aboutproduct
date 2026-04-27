@@ -1,0 +1,26 @@
+---
+description: Standards for Frontend development using Laminar, Scala.js, and LaminarRouter
+globs: ["webapp/**/*.scala"]
+---
+
+# Frontend Standards (Laminar & Scala.js)
+
+## Laminar UI
+- Use `Var` and `Signal` for reactive state management.
+- Keep components small and focused.
+- Use `amend` for modifying existing elements.
+- Prefer `HtmlElement` for generic component return types.
+
+## Scala.js
+- Be mindful of JS/JVM differences (e.g., number types, regex).
+- Use `scalajs-dom` for direct DOM manipulation when Laminar abstractions aren't enough.
+- Ensure efficient bundling using Mill's Scala.js support.
+
+## Routing with LaminarRouter
+- Define routes in a central `Router` configuration.
+- Use `Way` to define route mappings.
+- Ensure the URL state is synchronized with the application state.
+
+## Styling
+- Use Vanilla CSS or a Scala-native CSS library if integrated.
+- Prefer scoping styles to components or using a consistent naming convention.
