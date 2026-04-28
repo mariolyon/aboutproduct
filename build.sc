@@ -11,7 +11,7 @@ trait AppScalaJSModule extends AppScalaModule with ScalaJSModule {
 object shared extends Module {
   trait SharedModule extends AppScalaModule with PlatformScalaModule {
     def mvnDeps = Seq(
-      mvn"com.softwaremill.sttp.tapir::tapir-core::1.13.6"
+      mvn"com.softwaremill.sttp.tapir::tapir-core::1.13.17"
     )
   }
   object jvm extends SharedModule
@@ -21,8 +21,8 @@ object shared extends Module {
 object backend extends AppScalaModule {
   def moduleDeps = Seq(shared.jvm)
   def mvnDeps = Seq(
-    mvn"com.softwaremill.sttp.tapir::tapir-netty-server-sync:1.13.6",
-    mvn"com.softwaremill.sttp.tapir::tapir-files:1.13.6"
+    mvn"com.softwaremill.sttp.tapir::tapir-netty-server-sync:1.13.17",
+    mvn"com.softwaremill.sttp.tapir::tapir-files:1.13.17"
   )
   def resources = Task {
     os.makeDir.all(Task.dest / "frontend")
