@@ -1,0 +1,19 @@
+# Build artifacts
+target/
+project/target/
+project/project/
+out/
+resources/
+
+# Scala Tooling
+.metals/
+.bloop/
+.bsp/
+.scala-build/
+.ammonite/
+.history/
+.vscode/
+.idea/
+
+# Logs and temp files
+*.log
