@@ -22,7 +22,8 @@ object backend extends AppScalaModule {
   def moduleDeps = Seq(shared.jvm)
   def mvnDeps = Seq(
     mvn"com.softwaremill.sttp.tapir::tapir-netty-server-sync:1.13.17",
-    mvn"com.softwaremill.sttp.tapir::tapir-files:1.13.17"
+    mvn"com.softwaremill.sttp.tapir::tapir-files:1.13.17",
+    mvn"com.lihaoyi::ujson:4.1.0"
   )
   def resources = Task {
     os.makeDir.all(Task.dest / "frontend")
