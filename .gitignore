@@ -1,10 +1,24 @@
 *.class
-*.tasty
 *.log
+*.tasty
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
-hs_err_pid*
+.ammonite/
+.bloop/
 .bsp
-out
+.history/
+.idea/
+.metals/
+.scala-build/
+.vscode/
+
 docs/.env
-.vscode
+hs_err_pid*
+out/
+project/project/
+project/target/
+resources/
+target/
+
+
+
+
