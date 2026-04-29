@@ -147,6 +147,7 @@ import scala.util.control.NonFatal
   supervised:
     logger.info("Starting backend server on port 8080")
     NettySyncServer()
+      .host("0.0.0.0")
       .port(8080)
       .addEndpoint(createJobServerEndpoint)
       .addEndpoint(jobStatusServerEndpoint)
