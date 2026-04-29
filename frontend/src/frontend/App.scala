@@ -15,6 +15,9 @@ import scala.scalajs.js.timers.setTimeout
   val imagePreviewUrl = Var(Option.empty[String])
   val activeJobId = Var(Option.empty[String])
   val extractionResult = Var(Option.empty[js.Dynamic])
+  val cameraActive = Var(false)
+  val videoStreamRef = Var(Option.empty[dom.MediaStream])
+  val cameraVideoElement = Var(Option.empty[dom.HTMLVideoElement])
 
   val appStyles =
     """
@@ -28,6 +31,25 @@ import scala.scalajs.js.timers.setTimeout
       |  object-fit: contain;
       |  background: #fff;
       |  padding: 0.25rem;
+      |}
+      |.camera-viewfinder {
+      |  margin: 1rem auto 0;
+      |  width: min(420px, 95vw);
+      |}
+      |.camera-viewfinder video {
+      |  width: 100%;
+      |  border: 2px solid #111827;
+      |  border-radius: 8px;
+      |  background: #000;
+      |}
+      |.camera-controls {
+      |  margin-top: 0.6rem;
+      |  display: flex;
+      |  justify-content: center;
+      |  gap: 0.5rem;
+      |}
+      |.camera-controls button {
+      |  margin-left: 0;
       |}
       |.nutrition-card {
       |  margin: 1.5rem auto 0;
@@ -289,6 +311,78 @@ import scala.scalajs.js.timers.setTimeout
     selectedImage.set(maybeFile)
     imagePreviewUrl.set(maybeFile.map(file => dom.URL.createObjectURL(file)))
 
+  def stopCamera(): Unit =
+    videoStreamRef.now().foreach { stream =>
+      stream.getTracks().foreach(_.stop())
+    }
+    videoStreamRef.set(None)
+    cameraActive.set(false)
+    cameraVideoElement.set(None)
+
+  def startCamera(): Unit =
+    val mediaDevices = dom.window.navigator.mediaDevices
+    if js.isUndefined(mediaDevices) || mediaDevices == null then
+      status.set("Camera not available")
+    else
+      stopCamera()
+      val constraints = js.Dynamic
+        .literal(
+          video = js.Dynamic.literal(
+            facingMode = js.Dynamic.literal(ideal = "environment")
+          ),
+          audio = false
+        )
+        .asInstanceOf[dom.MediaStreamConstraints]
+
+      val cameraFuture = mediaDevices.getUserMedia(constraints).toFuture
+
+      cameraFuture.foreach { stream =>
+          videoStreamRef.set(Some(stream))
+          cameraActive.set(true)
+          status.set("Camera ready")
+      }
+
+      cameraFuture.failed.foreach { _ =>
+        status.set("Camera access denied")
+      }
+
+  def captureFrame(video: dom.HTMLVideoElement): Unit =
+    val width = if video.videoWidth > 0 then video.videoWidth else 1280
+    val height = if video.videoHeight > 0 then video.videoHeight else 720
+    val canvas = dom.document.createElement("canvas").asInstanceOf[dom.HTMLCanvasElement]
+    canvas.width = width
+    canvas.height = height
+    val maybeContext = Option(canvas.getContext("2d")).map(_.asInstanceOf[dom.CanvasRenderingContext2D])
+
+    maybeContext match
+      case Some(context) =>
+        context.drawImage(video, 0, 0, width, height)
+        val dataUrl = canvas.toDataURL("image/jpeg", 0.92)
+        val blobFuture = for
+          response <- dom.fetch(dataUrl).toFuture
+          blob <- response.blob().toFuture
+        yield blob
+
+        blobFuture.foreach { imageBlob =>
+          val file = new dom.File(
+            js.Array(imageBlob),
+            "camera-photo.jpg",
+            js.Dynamic.literal(
+              `type` = "image/jpeg"
+            ).asInstanceOf[dom.FilePropertyBag]
+          )
+          setSelectedImage(Some(file))
+          status.set("Photo captured")
+          stopCamera()
+        }
+        blobFuture.failed.foreach { _ =>
+          status.set("Failed")
+          stopCamera()
+        }
+      case None =>
+        status.set("Failed")
+        stopCamera()
+
   def readImage(): Unit =
     selectedImage.now() match
       case Some(image) =>
@@ -343,14 +437,56 @@ import scala.scalajs.js.timers.setTimeout
         accept := "image/*",
         onChange --> { event =>
           val files = event.target.asInstanceOf[dom.HTMLInputElement].files
+          stopCamera()
           setSelectedImage(Option(files).flatMap(fileList => Option(fileList.item(0))))
         }
+      ),
+      button(
+        "Take Photo",
+        onClick --> (_ => startCamera())
       ),
       button(
         "Read",
         onClick --> (_ => readImage())
       )
     ),
+    child.maybe <-- cameraActive.signal.map { active =>
+      Option.when(active) {
+        div(
+          cls := "camera-viewfinder",
+          htmlTag("video")(
+            onMountCallback { ctx =>
+              val videoElement = ctx.thisNode.ref.asInstanceOf[dom.HTMLVideoElement]
+              videoElement.autoplay = true
+              videoElement.muted = true
+              videoElement.setAttribute("playsinline", "true")
+              cameraVideoElement.set(Some(videoElement))
+            },
+            onUnmountCallback(_ => cameraVideoElement.set(None)),
+            inContext { thisNode =>
+              videoStreamRef.signal --> { maybeStream =>
+                thisNode.ref.asInstanceOf[js.Dynamic].updateDynamic("srcObject")(maybeStream.orNull)
+              }
+            }
+          ),
+          div(
+            cls := "camera-controls",
+            button(
+              "Capture",
+              onClick --> (_ =>
+                cameraVideoElement.now() match
+                  case Some(videoElement) => captureFrame(videoElement)
+                  case None               => status.set("Camera not ready")
+              )
+            ),
+            button(
+              "Cancel",
+              onClick --> (_ => stopCamera())
+            )
+          )
+        )
+      }
+    },
     p(child.text <-- selectedImageNameSignal),
     child.maybe <-- imagePreviewUrl.signal.map(
       _.map(url => img(cls := "image-preview", src := url, alt := "Selected image preview"))
