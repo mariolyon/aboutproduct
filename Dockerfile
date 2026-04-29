@@ -24,7 +24,4 @@ COPY --from=build /workspace/out/backend/assembly.dest/out.jar /app/app.jar
 
 EXPOSE 8080
 
-ENV PROJECT_ID=project_id
-ENV API_KEY=api_key
-
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -1,5 +1,5 @@
 #!/bin/sh
-
+set -a
 source .env
 
 curl "https://nuextract.ai/api/structured-extraction/$PROJECT_ID/jobs" \
