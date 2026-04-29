@@ -139,9 +139,10 @@ import scala.util.control.NonFatal
       fetchNuExtractJobStatus(jobId)
     )
 
-  val staticDir = Thread.currentThread().getContextClassLoader.getResource("frontend").getPath
-
-  val staticEndpoints = staticFilesGetServerEndpoint[sttp.shared.Identity](emptyInput)(staticDir)
+  val staticEndpoints = staticResourcesGetServerEndpoint[sttp.shared.Identity](emptyInput)(
+    Thread.currentThread().getContextClassLoader,
+    "frontend"
+  )
 
   supervised:
     logger.info("Starting backend server on port 8080")
