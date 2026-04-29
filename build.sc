@@ -33,6 +33,8 @@ object backend extends AppScalaModule {
     val frontendResources = os.Path(frontend.resources().head.path.toString)
     if (os.exists(frontendResources / "index.html"))
       os.copy.over(frontendResources / "index.html", Task.dest / "frontend" / "index.html")
+    if (os.exists(frontendResources / "app.css"))
+      os.copy.over(frontendResources / "app.css", Task.dest / "frontend" / "app.css")
     super.resources() ++ Seq(PathRef(Task.dest))
   }
 }
