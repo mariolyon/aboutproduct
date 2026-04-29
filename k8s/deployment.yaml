@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aboutproduct
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aboutproduct
+  template:
+    metadata:
+      labels:
+        app: aboutproduct
+    spec:
+      containers:
+        - name: aboutproduct
+          image: ghcr.io/mariolyon/aboutproduct:latest
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: aboutproduct-env
+                  key: API_KEY
+            - name: PROJECT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: aboutproduct-env
+                  key: PROJECT_ID
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      imagePullSecrets:
+        - name: ghcr-login
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aboutproduct
+  labels:
+    app: aboutproduct
+spec:
+  type: ClusterIP
+  selector:
+    app: aboutproduct
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aboutproduct-ingress
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: aboutproduct.digileo.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aboutproduct
+                port:
+                  number: 80
+  tls:
+    - hosts:
+        - aboutproduct.digileo.com
+      secretName: aboutproduct-cert
