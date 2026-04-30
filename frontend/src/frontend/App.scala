@@ -249,6 +249,7 @@ import scala.scalajs.js.timers.setTimeout
           setSelectedImage(Some(file))
           status.set("Photo captured")
           stopCamera()
+          readImage()
         }
         blobFuture.failed.foreach { _ =>
           status.set("Failed")
@@ -332,7 +333,9 @@ import scala.scalajs.js.timers.setTimeout
           onChange --> { event =>
             val files = event.target.asInstanceOf[dom.HTMLInputElement].files
             stopCamera()
-            setSelectedImage(Option(files).flatMap(fileList => Option(fileList.item(0))))
+            val maybeFile = Option(files).flatMap(fileList => Option(fileList.item(0)))
+            setSelectedImage(maybeFile)
+            maybeFile.foreach(_ => readImage())
           }
         )
       ),
@@ -349,19 +352,6 @@ import scala.scalajs.js.timers.setTimeout
           svg.circle(svg.cx := "12", svg.cy := "13", svg.r := "3")
         ),
         "Take Photo"
-      ),
-      // Read Button
-      button(
-        cls := "action-btn primary",
-        onClick --> (_ => readImage()),
-        svg.svg(
-          svg.viewBox := "0 0 24 24",
-          svg.fill := "none",
-          svg.stroke := "currentColor",
-          svg.strokeWidth := "2",
-          svg.path(svg.d := "M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7")
-        ),
-        "Read"
       )
     ),
     child.maybe <-- cameraActive.signal.map { active =>
