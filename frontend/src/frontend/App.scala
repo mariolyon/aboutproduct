@@ -10,7 +10,7 @@ import scala.scalajs.js
 import scala.scalajs.js.timers.setTimeout
 
 @main def app(): Unit =
-  val status = Var("")
+  val status = Var("Select image to begin")
   val selectedImage = Var(Option.empty[dom.File])
   val imagePreviewUrl = Var(Option.empty[String])
   val activeJobId = Var(Option.empty[String])
@@ -300,10 +300,6 @@ import scala.scalajs.js.timers.setTimeout
       case None =>
         status.set("Select an image first")
 
-  val selectedImageNameSignal = selectedImage.signal.map(
-    _.map(_.name).getOrElse("Select image to begin")
-  )
-
   val appElement = div(
     div(
       cls := "app-banner",
@@ -393,12 +389,19 @@ import scala.scalajs.js.timers.setTimeout
         )
       }
     },
-    p(child.text <-- selectedImageNameSignal),
     div(
       cls := "results-container",
-      child.maybe <-- imagePreviewUrl.signal.map(
-        _.map(url => img(cls := "image-preview", src := url, alt := "Selected image preview"))
-      ),
+      child.maybe <-- imagePreviewUrl.signal.combineWith(selectedImage.signal).map {
+        case (Some(url), Some(file)) =>
+          Some(
+            div(
+              cls := "image-frame",
+              div(cls := "image-filename", file.name),
+              img(cls := "image-preview", src := url, alt := "Selected image preview")
+            )
+          )
+        case _ => None
+      },
       child.maybe <-- extractionResult.signal.map(_.map(renderNutritionFacts))
     )
   )
