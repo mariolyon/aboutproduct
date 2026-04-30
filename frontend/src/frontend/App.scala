@@ -349,8 +349,8 @@ import scala.scalajs.js.timers.setTimeout
         "Take Photo"
       )
     ),
-    child.maybe <-- status.signal.map { s =>
-      Option.when(s.nonEmpty)(h2(cls := "status-text", s))
+    child.maybe <-- status.signal.combineWith(selectedImage.signal).map { case (s, imgOpt) =>
+      Option.when(s.nonEmpty && imgOpt.isEmpty)(h2(cls := "status-text", s))
     },
     child.maybe <-- cameraActive.signal.map { active =>
       Option.when(active) {
@@ -396,7 +396,10 @@ import scala.scalajs.js.timers.setTimeout
           Some(
             div(
               cls := "image-frame",
-              div(cls := "image-filename", s"Source: ${file.name}"),
+              child.maybe <-- status.signal.map { s =>
+                Option.when(s.nonEmpty)(h2(cls := "status-text", s))
+              },
+              div(cls := "image-filename", file.name),
               img(cls := "image-preview", src := url, alt := "Selected image preview")
             )
           )
@@ -411,7 +414,7 @@ import scala.scalajs.js.timers.setTimeout
             node.scrollIntoView(js.Dynamic.literal(behavior = "smooth", block = "start"))
             node.focus()
           },
-          div(cls := "result-title", "Result"),
+          h2(cls := "status-text", "Result"),
           renderNutritionFacts(result)
         )
       })

@@ -139,7 +139,7 @@ body {
   margin: 0;
   width: min(380px, 100%);
   background: #ffffff;
-  border: 2px solid #111;
+  border: 1px solid #d1d5db;
   border-radius: 0;
   padding: 0.75rem;
   text-align: left;
