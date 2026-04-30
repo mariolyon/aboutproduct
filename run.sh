@@ -1,10 +1,7 @@
 #!/usr/bin/env sh
 echo "#RUN"
-set -euo pipefail
+set -euoa pipefail
 
-./build.sh
+source ./docs/.env
 
-docker run -it --rm \
-  --env-file docs/.env \
-  -p 8080:8080 \
-  ghcr.io/mariolyon/aboutproduct:latest
+mill backend.run
