@@ -10,7 +10,7 @@ import scala.scalajs.js
 import scala.scalajs.js.timers.setTimeout
 
 @main def app(): Unit =
-  val status = Var("Read")
+  val status = Var("")
   val selectedImage = Var(Option.empty[dom.File])
   val imagePreviewUrl = Var(Option.empty[String])
   val activeJobId = Var(Option.empty[String])
@@ -301,16 +301,15 @@ import scala.scalajs.js.timers.setTimeout
         status.set("Select an image first")
 
   val selectedImageNameSignal = selectedImage.signal.map(
-    _.map(_.name).getOrElse("No image selected")
+    _.map(_.name).getOrElse("Select image to begin")
   )
 
   val appElement = div(
     div(
       cls := "app-banner",
       h1("AboutProduct"),
-      p(cls := "app-blurb", "Instantly extract and visualize nutrition facts from product labels using AI.")
+      p(cls := "app-blurb", "AI-powered nutrition insights from any label.")
     ),
-    h2(cls := "status-text", child.text <-- status.signal),
     div(
       cls := "action-bar",
       // Upload Button
@@ -354,6 +353,9 @@ import scala.scalajs.js.timers.setTimeout
         "Take Photo"
       )
     ),
+    child.maybe <-- status.signal.map { s =>
+      Option.when(s.nonEmpty)(h2(cls := "status-text", s))
+    },
     child.maybe <-- cameraActive.signal.map { active =>
       Option.when(active) {
         div(
