@@ -396,13 +396,19 @@ import scala.scalajs.js.timers.setTimeout
           Some(
             div(
               cls := "image-frame",
-              div(cls := "image-filename", file.name),
+              div(cls := "image-filename", s"Source: ${file.name}"),
               img(cls := "image-preview", src := url, alt := "Selected image preview")
             )
           )
         case _ => None
       },
-      child.maybe <-- extractionResult.signal.map(_.map(renderNutritionFacts))
+      child.maybe <-- extractionResult.signal.map(_.map { result =>
+        div(
+          cls := "result-frame",
+          div(cls := "result-title", "Result"),
+          renderNutritionFacts(result)
+        )
+      })
     )
   )
 
