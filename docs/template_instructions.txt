@@ -1,1 +1,6 @@
-If the quantity_unit is cup, the quantity should be assumed to be a fraction and converted to a decimal number
+- The words should be translated to English first before they are extracted.
+
+- For quantity Convert German decimal commas to dots first (e.g., 10,50 -> 10.50).
+
+- If the quantity_unit is cup, the quantity should be assumed to be a fraction and converted to a decimal number.
+
