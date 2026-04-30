@@ -354,7 +354,7 @@ object Components:
     div(
       cls := "app-banner",
       h1("AboutProduct"),
-      p(cls := "app-blurb", "AI-powered nutrition insights from any label.")
+      p(cls := "app-blurb", "AI-powered nutrition insights from any food label.")
     ),
     div(
       cls := "action-bar",
