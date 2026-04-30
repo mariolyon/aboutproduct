@@ -37,6 +37,12 @@ object backend extends AppScalaModule {
       os.copy.over(frontendResources / "app.css", Task.dest / "frontend" / "app.css")
     super.resources() ++ Seq(PathRef(Task.dest))
   }
+
+  object test extends ScalaTests with TestModule.Munit {
+    def mvnDeps = Seq(
+      mvn"org.scalameta::munit::1.0.0"
+    )
+  }
 }
 
 object frontend extends AppScalaJSModule {
