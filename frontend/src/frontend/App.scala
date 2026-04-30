@@ -9,16 +9,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.scalajs.js
 import scala.scalajs.js.timers.setTimeout
 
-@main def app(): Unit =
-  val status = Var("Select image to begin")
-  val selectedImage = Var(Option.empty[dom.File])
-  val imagePreviewUrl = Var(Option.empty[String])
-  val activeJobId = Var(Option.empty[String])
-  val extractionResult = Var(Option.empty[js.Dynamic])
-  val cameraActive = Var(false)
-  val videoStreamRef = Var(Option.empty[dom.MediaStream])
-  val cameraVideoElement = Var(Option.empty[dom.HTMLVideoElement])
-
+object JsonUtils:
   def isDefined(value: js.Dynamic): Boolean =
     !js.isUndefined(value) && value != null
 
@@ -60,6 +51,61 @@ import scala.scalajs.js.timers.setTimeout
   def hasCompletedResult(result: js.Dynamic): Boolean =
     findNutritionFacts(result).nonEmpty
 
+  case class Nutrient(name: String, quantity: String, percentage: String)
+  case class NutritionFactsData(
+    title: String,
+    servingsPerContainer: String,
+    servingSize: String,
+    calories: String,
+    totalFat: String,
+    saturatedFat: String,
+    transFat: String,
+    cholesterol: String,
+    sodium: String,
+    totalCarbs: String,
+    dietaryFiber: String,
+    totalSugars: String,
+    addedSugars: String,
+    protein: String,
+    nutrients: Seq[Nutrient],
+    smallPrint: String
+  )
+
+  def extractNutritionFacts(result: js.Dynamic): NutritionFactsData =
+    val nutrition = findNutritionFacts(result).getOrElse(result)
+    val servingSizeParts = asArray(dynamicField(nutrition, "serving_size")).map(quantityWithUnit).mkString(" / ")
+    val carbs = dynamicField(nutrition, "carbs")
+    val sugars = carbs.flatMap(c => dynamicField(c, "sugars"))
+    val nutrients = asArray(dynamicField(nutrition, "nutrients")).map { n =>
+      Nutrient(
+        stringField(n, "name"),
+        quantityWithUnit(n),
+        stringField(n, "percentage_daily_value")
+      )
+    }
+
+    NutritionFactsData(
+      title = stringField(nutrition, "title"),
+      servingsPerContainer = stringField(nutrition, "servings_per_container"),
+      servingSize = if servingSizeParts.nonEmpty then servingSizeParts else "n/a",
+      calories = stringField(nutrition, "calories"),
+      totalFat = dynamicField(nutrition, "total_fat").map(quantityWithUnit).getOrElse("n/a"),
+      saturatedFat = dynamicField(nutrition, "saturated_fat").map(quantityWithUnit).getOrElse("n/a"),
+      transFat = dynamicField(nutrition, "trans_fat").map(quantityWithUnit).getOrElse("n/a"),
+      cholesterol = dynamicField(nutrition, "cholesterol").map(quantityWithUnit).getOrElse("n/a"),
+      sodium = dynamicField(nutrition, "sodium").map(quantityWithUnit).getOrElse("n/a"),
+      totalCarbs = dynamicField(carbs.getOrElse(js.Dynamic.literal()), "total").map(quantityWithUnit).getOrElse("n/a"),
+      dietaryFiber = dynamicField(carbs.getOrElse(js.Dynamic.literal()), "fiber").map(quantityWithUnit).getOrElse("n/a"),
+      totalSugars = dynamicField(sugars.getOrElse(js.Dynamic.literal()), "total").map(quantityWithUnit).getOrElse("n/a"),
+      addedSugars = dynamicField(sugars.getOrElse(js.Dynamic.literal()), "added").map(quantityWithUnit).getOrElse("n/a"),
+      protein = dynamicField(nutrition, "protein").map(quantityWithUnit).getOrElse("n/a"),
+      nutrients = nutrients,
+      smallPrint = stringField(nutrition, "small_print")
+    )
+
+object Components:
+  import JsonUtils.*
+
   def row(labelText: String, valueText: String, rowClass: String = ""): HtmlElement =
     div(
       className := s"nf-row $rowClass".trim,
@@ -68,22 +114,13 @@ import scala.scalajs.js.timers.setTimeout
     )
 
   def renderNutritionFacts(result: js.Dynamic): HtmlElement =
-    val nutrition = findNutritionFacts(result).getOrElse(result)
-    val servingSizeParts = asArray(dynamicField(nutrition, "serving_size")).map(quantityWithUnit).mkString(" / ")
-    val carbs = dynamicField(nutrition, "carbs")
-    val sugars = carbs.flatMap(c => dynamicField(c, "sugars"))
-    val totalCarbs = carbs.flatMap(c => dynamicField(c, "total"))
-    val fiber = carbs.flatMap(c => dynamicField(c, "fiber"))
-    val totalSugars = sugars.flatMap(s => dynamicField(s, "total"))
-    val addedSugars = sugars.flatMap(s => dynamicField(s, "added"))
-    val nutrients = asArray(dynamicField(nutrition, "nutrients"))
-    val calories = stringField(nutrition, "calories")
+    val data = extractNutritionFacts(result)
 
     div(
       cls := "nutrition-card",
-      h2(stringField(nutrition, "title")),
-      div(cls := "nf-subtitle", s"${stringField(nutrition, "servings_per_container")} servings per container"),
-      row("Serving size", if servingSizeParts.nonEmpty then servingSizeParts else "n/a", "serving-size"),
+      h2(data.title),
+      div(cls := "nf-subtitle", s"${data.servingsPerContainer} servings per container"),
+      row("Serving size", data.servingSize, "serving-size"),
       div(cls := "nf-thick-divider"),
       div(
         cls := "nf-amount",
@@ -92,35 +129,48 @@ import scala.scalajs.js.timers.setTimeout
       div(
         cls := "nf-calories-row",
         span(cls := "nf-calories-label", "Calories"),
-        span(cls := "nf-calories-value", calories)
+        span(cls := "nf-calories-value", data.calories)
       ),
       div(cls := "nf-thick-divider"),
       div(
         cls := "nf-dv-header",
         "% Daily Value*"
       ),
-      row("Total Fat", dynamicField(nutrition, "total_fat").map(quantityWithUnit).getOrElse("n/a"), "major"),
-      row("Saturated Fat", dynamicField(nutrition, "saturated_fat").map(quantityWithUnit).getOrElse("n/a"), "indent"),
-      row("Trans Fat", dynamicField(nutrition, "trans_fat").map(quantityWithUnit).getOrElse("n/a"), "indent"),
-      row("Cholesterol", dynamicField(nutrition, "cholesterol").map(quantityWithUnit).getOrElse("n/a"), "major"),
-      row("Sodium", dynamicField(nutrition, "sodium").map(quantityWithUnit).getOrElse("n/a"), "major"),
-      row("Total Carbohydrate", totalCarbs.map(quantityWithUnit).getOrElse("n/a"), "major"),
-      row("Dietary Fiber", fiber.map(quantityWithUnit).getOrElse("n/a"), "indent"),
-      row("Total Sugars", totalSugars.map(quantityWithUnit).getOrElse("n/a"), "indent"),
-      row("Includes Added Sugars", addedSugars.map(quantityWithUnit).getOrElse("n/a"), "indent-2"),
-      row("Protein", dynamicField(nutrition, "protein").map(quantityWithUnit).getOrElse("n/a"), "major"),
+      row("Total Fat", data.totalFat, "major"),
+      row("Saturated Fat", data.saturatedFat, "indent"),
+      row("Trans Fat", data.transFat, "indent"),
+      row("Cholesterol", data.cholesterol, "major"),
+      row("Sodium", data.sodium, "major"),
+      row("Total Carbohydrate", data.totalCarbs, "major"),
+      row("Dietary Fiber", data.dietaryFiber, "indent"),
+      row("Total Sugars", data.totalSugars, "indent"),
+      row("Includes Added Sugars", data.addedSugars, "indent-2"),
+      row("Protein", data.protein, "major"),
       div(cls := "nf-thick-divider"),
-      if nutrients.nonEmpty then
-        nutrients.map(nutrient =>
+      if data.nutrients.nonEmpty then
+        data.nutrients.map(nutrient =>
           row(
-            stringField(nutrient, "name"),
-            s"${quantityWithUnit(nutrient)} (${stringField(nutrient, "percentage_daily_value")}% DV)"
+            nutrient.name,
+            s"${nutrient.quantity} (${nutrient.percentage}% DV)"
           )
         )
       else
         emptyNode,
-      p(cls := "nf-small-print", stringField(nutrition, "small_print"))
+      p(cls := "nf-small-print", data.smallPrint)
     )
+
+@main def app(): Unit =
+  val status = Var("Select image to begin")
+  val selectedImage = Var(Option.empty[dom.File])
+  val imagePreviewUrl = Var(Option.empty[String])
+  val activeJobId = Var(Option.empty[String])
+  val extractionResult = Var(Option.empty[js.Dynamic])
+  val cameraActive = Var(false)
+  val videoStreamRef = Var(Option.empty[dom.MediaStream])
+  val cameraVideoElement = Var(Option.empty[dom.HTMLVideoElement])
+
+  import JsonUtils.*
+  import Components.*
 
   def pollJobStatus(jobId: String): Unit =
     val pollDelayMs = 10000

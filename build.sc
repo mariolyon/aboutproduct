@@ -50,4 +50,10 @@ object frontend extends AppScalaJSModule {
   def mvnDeps = Seq(
     mvn"com.raquo::laminar::17.0.0"
   )
+
+  object test extends ScalaJSTests with TestModule.Munit {
+    def mvnDeps = Seq(
+      mvn"org.scalameta::munit::1.0.0"
+    )
+  }
 }
