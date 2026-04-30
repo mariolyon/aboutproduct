@@ -11,15 +11,11 @@
 .scala-build/
 .vscode/
 
-docs/.env
 hs_err_pid*
 out/
 project/project/
 project/target/
-resources/
 target/
 
-
-
-
 k8s/secret.yaml
+docs/.env

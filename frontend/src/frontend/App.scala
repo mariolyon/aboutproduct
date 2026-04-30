@@ -304,7 +304,12 @@ import scala.scalajs.js.timers.setTimeout
   )
 
   val appElement = div(
-    h1(child.text <-- status.signal),
+    div(
+      cls := "app-banner",
+      h1("AboutProduct"),
+      p(cls := "app-blurb", "Instantly extract and visualize nutrition facts from product labels using AI.")
+    ),
+    h2(cls := "status-text", child.text <-- status.signal),
     div(
       cls := "upload-row",
       input(

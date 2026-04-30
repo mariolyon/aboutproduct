@@ -2,6 +2,8 @@
 echo "#RUN"
 set -euo pipefail
 
+./build.sh
+
 docker run -it --rm \
   --env-file docs/.env \
   -p 8080:8080 \
