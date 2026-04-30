@@ -150,7 +150,7 @@ import scala.scalajs.js.timers.setTimeout
                   if hasCompletedResult(parsed) then
                     extractionResult.set(Some(parsed))
                     activeJobId.set(None)
-                    status.set("Read complete")
+                    status.set("Analysis complete")
                   else if isProcessingStatus(parsed) then
                     status.set("processing ...")
                     continuePolling()
@@ -405,6 +405,12 @@ import scala.scalajs.js.timers.setTimeout
       child.maybe <-- extractionResult.signal.map(_.map { result =>
         div(
           cls := "result-frame",
+          tabIndex := -1,
+          onMountCallback { ctx =>
+            val node = ctx.thisNode.ref.asInstanceOf[js.Dynamic]
+            node.scrollIntoView(js.Dynamic.literal(behavior = "smooth", block = "start"))
+            node.focus()
+          },
           div(cls := "result-title", "Result"),
           renderNutritionFacts(result)
         )
