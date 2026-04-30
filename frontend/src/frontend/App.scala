@@ -414,7 +414,19 @@ import scala.scalajs.js.timers.setTimeout
             node.scrollIntoView(js.Dynamic.literal(behavior = "smooth", block = "start"))
             node.focus()
           },
-          h2(cls := "status-text", "Result"),
+          div(
+            styleAttr := "display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1.25rem;",
+            h2(cls := "status-text", styleAttr := "margin-bottom: 0;", "Result"),
+            button(
+              cls := "action-btn",
+              styleAttr := "padding: 0.4rem 0.8rem; min-width: auto; flex-direction: row; font-size: 0.75rem;",
+              "Copy JSON",
+              onClick --> { _ =>
+                val jsonString = js.JSON.stringify(findNutritionFacts(result).getOrElse(js.Dynamic.literal()), null.asInstanceOf[js.Array[js.Any]], 2)
+                dom.window.navigator.clipboard.writeText(jsonString)
+              }
+            )
+          ),
           renderNutritionFacts(result)
         )
       })
