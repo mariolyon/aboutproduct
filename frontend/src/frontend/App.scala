@@ -392,10 +392,13 @@ import scala.scalajs.js.timers.setTimeout
       }
     },
     p(child.text <-- selectedImageNameSignal),
-    child.maybe <-- imagePreviewUrl.signal.map(
-      _.map(url => img(cls := "image-preview", src := url, alt := "Selected image preview"))
-    ),
-    child.maybe <-- extractionResult.signal.map(_.map(renderNutritionFacts))
+    div(
+      cls := "results-container",
+      child.maybe <-- imagePreviewUrl.signal.map(
+        _.map(url => img(cls := "image-preview", src := url, alt := "Selected image preview"))
+      ),
+      child.maybe <-- extractionResult.signal.map(_.map(renderNutritionFacts))
+    )
   )
 
   renderOnDomContentLoaded(

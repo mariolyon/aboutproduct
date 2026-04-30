@@ -87,21 +87,33 @@ body {
 }
 
 /* Image & Camera Styles */
+.results-container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2rem;
+  margin: 1.5rem auto;
+  width: 100%;
+}
+
 .image-preview {
-  margin: 1rem auto 0;
+  margin: 0;
   display: block;
-  max-width: min(280px, 90vw);
-  max-height: 220px;
+  max-width: min(450px, 90vw);
+  max-height: 500px;
   border: 2px solid #111827;
   border-radius: 8px;
   object-fit: contain;
   background: #fff;
   padding: 0.25rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .camera-viewfinder {
   margin: 1rem auto 0;
-  width: min(420px, 95vw);
+  width: min(500px, 95vw);
 }
 
 .camera-viewfinder video {
@@ -124,14 +136,30 @@ body {
 
 /* Nutrition Card Styles */
 .nutrition-card {
-  margin: 1.5rem auto 0;
-  width: min(520px, 100%);
+  margin: 0;
+  width: min(380px, 100%);
   background: #ffffff;
   border: 2px solid #111;
   border-radius: 0;
   padding: 0.75rem;
   text-align: left;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 850px) {
+  .results-container {
+    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  
+  .image-preview {
+    max-width: min(400px, 90vw);
+  }
+  
+  .nutrition-card {
+    width: min(400px, 100%);
+  }
 }
 
 .nutrition-card h2 {
