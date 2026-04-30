@@ -7,12 +7,6 @@ body {
   color: #1a1a1a;
 }
 
-#app {
-  width: min(880px, 94vw);
-  margin: 0 auto;
-  text-align: center;
-}
-
 .action-bar {
   display: flex;
   justify-content: center;
@@ -55,17 +49,6 @@ body {
   transform: translateY(0);
 }
 
-.action-btn.primary {
-  background: #2563eb;
-  color: white;
-  border-color: #2563eb;
-}
-
-.action-btn.primary:hover {
-  background: #1d4ed8;
-  border-color: #1d4ed8;
-}
-
 .action-btn svg {
   width: 20px;
   height: 20px;
@@ -86,34 +69,9 @@ body {
   cursor: pointer;
 }
 
-/* Image & Camera Styles */
-.results-container {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 2rem;
-  margin: 1.5rem auto;
-  width: 100%;
-}
-
-.image-preview {
-  margin: 0;
-  display: block;
-  max-width: min(450px, 90vw);
-  max-height: 500px;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  object-fit: contain;
-  background: #fff;
-  padding: 0.25rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
 .camera-viewfinder {
   margin: 1rem auto 0;
-  width: min(500px, 95vw);
+  width: min(600px, 95vw);
 }
 
 .camera-viewfinder video {
@@ -130,36 +88,17 @@ body {
   gap: 0.5rem;
 }
 
-.camera-controls button {
-  margin-left: 0;
-}
-
 /* Nutrition Card Styles */
 .nutrition-card {
-  margin: 0;
-  width: min(380px, 100%);
+  margin: 0 auto;
+  width: 100%;
+  max-width: 450px;
   background: #ffffff;
   border: 1px solid #d1d5db;
   border-radius: 0;
   padding: 0.75rem;
   text-align: left;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-}
-
-@media (max-width: 850px) {
-  .results-container {
-    flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-  }
-  
-  .image-preview {
-    max-width: min(400px, 90vw);
-  }
-  
-  .nutrition-card {
-    width: min(400px, 100%);
-  }
 }
 
 .nutrition-card h2 {
@@ -262,57 +201,9 @@ body {
   padding-bottom: 0.35rem;
 }
 
-/* Banner Styles */
-.app-banner {
-  margin-bottom: 1.5rem;
-  padding: 1rem;
-  background: #111827;
-  color: #f9fafb;
-  border-radius: 0 0 12px 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-}
-
-.app-banner h1 {
-  font-size: 2rem;
-  font-weight: 800;
-  margin-bottom: 0.25rem;
-  color: #fff;
-  letter-spacing: -0.025em;
-}
-
-.app-blurb {
-  font-size: 1rem;
-  color: #d1d5db;
-  max-width: 600px;
-  margin: 0 auto;
-  line-height: 1.4;
-}
-
 .status-text {
   font-size: 1.25rem;
   margin-bottom: 1.25rem;
   color: #374151;
   font-weight: 600;
-}
-
-.image-frame, .result-frame {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 1rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  max-width: min(482px, 95vw);
-  margin: 0 auto;
-}
-
-.image-filename, .result-title {
-  margin-bottom: 0.75rem;
-  font-size: 0.875rem;
-  color: #6b7280;
-  word-break: break-all;
-  font-weight: 500;
-  text-align: left;
 }

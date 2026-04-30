@@ -351,10 +351,11 @@ object Components:
         status.set("Select an image first")
 
   val appElement = div(
+    cls := "max-w-[1200px] w-[96vw] mx-auto text-center",
     div(
-      cls := "app-banner",
-      h1("AboutProduct"),
-      p(cls := "app-blurb", "AI-powered nutrition insights from any food label.")
+      cls := "app-banner mb-6 p-4 bg-gray-900 text-gray-50 rounded-b-xl shadow-md",
+      h1(cls := "text-3xl font-extrabold mb-1 text-white tracking-tight", "AboutProduct"),
+      p(cls := "app-blurb text-gray-400 max-w-2xl mx-auto leading-relaxed", "AI-powered nutrition insights from any food label.")
     ),
     div(
       cls := "action-bar",
@@ -440,24 +441,24 @@ object Components:
       }
     },
     div(
-      cls := "results-container",
+      cls := "flex flex-col lg:flex-row flex-wrap justify-center items-start gap-8 my-6 w-full",
       child.maybe <-- imagePreviewUrl.signal.combineWith(selectedImage.signal).map {
         case (Some(url), Some(file)) =>
           Some(
             div(
-              cls := "image-frame",
+              cls := "flex-1 min-w-[380px] lg:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto lg:mx-0",
               child.maybe <-- status.signal.map { s =>
                 Option.when(s.nonEmpty)(h2(cls := "status-text", s))
               },
-              div(cls := "image-filename", file.name),
-              img(cls := "image-preview", src := url, alt := "Selected image preview")
+              div(cls := "image-filename mb-3 text-sm text-gray-500 break-all font-medium text-left w-full", file.name),
+              img(cls := "image-preview w-full max-h-[70vh] block border border-gray-300 rounded-lg object-contain bg-white p-1 shadow-md", src := url, alt := "Selected image preview")
             )
           )
         case _ => None
       },
       child.maybe <-- extractionResult.signal.map(_.map { result =>
         div(
-          cls := "result-frame",
+          cls := "flex-1 min-w-[380px] lg:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto lg:mx-0",
           tabIndex := -1,
           onMountCallback { ctx =>
             val node = ctx.thisNode.ref.asInstanceOf[js.Dynamic]
@@ -465,11 +466,10 @@ object Components:
             node.focus()
           },
           div(
-            styleAttr := "display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 1.25rem;",
-            h2(cls := "status-text", styleAttr := "margin-bottom: 0;", "Result"),
+            cls := "flex justify-between items-center w-full mb-5",
+            h2(cls := "status-text mb-0", "Result"),
             button(
-              cls := "action-btn",
-              styleAttr := "padding: 0.4rem 0.8rem; min-width: auto; flex-direction: row; font-size: 0.75rem;",
+              cls := "action-btn px-3 py-1.5 min-w-0 flex-row text-xs",
               "Copy JSON",
               onClick --> { _ =>
                 val jsonString = js.JSON.stringify(findNutritionFacts(result).getOrElse(js.Dynamic.literal()), null.asInstanceOf[js.Array[js.Any]], 2)
