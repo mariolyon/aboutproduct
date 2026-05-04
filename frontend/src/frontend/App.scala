@@ -202,6 +202,7 @@ object Components:
   val extractionResult = Var(Option.empty[js.Dynamic])
   val scanHistory = Var(StorageUtils.loadHistory())
   val showHistory = Var(false)
+  val comparisonResult = Var(Option.empty[js.Dynamic])
   val cameraActive = Var(false)
   val videoStreamRef = Var(Option.empty[dom.MediaStream])
   val cameraVideoElement = Var(Option.empty[dom.HTMLVideoElement])
@@ -402,6 +403,48 @@ object Components:
       case None =>
         status.set("Select an image first")
 
+  def renderImagePreview(urlOpt: Option[String], fileOpt: Option[dom.File], s: String): HtmlElement =
+    div(
+      cls := "flex-1 min-w-[380px] lg:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto lg:mx-0",
+      Option.when(s.nonEmpty)(h2(cls := "status-text", s)).getOrElse(emptyNode),
+      fileOpt.map(file => div(cls := "image-filename mb-3 text-sm text-gray-500 break-all font-medium text-left w-full", file.name)).getOrElse(emptyNode),
+      urlOpt.map(url => img(cls := "image-preview w-full max-h-[70vh] block border border-gray-300 rounded-lg object-contain bg-white p-1 shadow-md", src := url, alt := "Selected image preview")).getOrElse(emptyNode)
+    )
+
+  def renderResultCard(result: js.Dynamic, headerTitle: String, onClear: Option[() => Unit] = None): HtmlElement =
+    div(
+      cls := "flex-1 min-w-[380px] lg:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto lg:mx-0",
+      tabIndex := -1,
+      onMountCallback { ctx =>
+        val node = ctx.thisNode.ref.asInstanceOf[js.Dynamic]
+        node.scrollIntoView(js.Dynamic.literal(behavior = "smooth", block = "start"))
+        node.focus()
+      },
+      div(
+        cls := "flex justify-between items-center w-full mb-5",
+        h2(cls := "status-text mb-0", headerTitle),
+        div(
+          cls := "flex gap-2",
+          button(
+            cls := "action-btn px-3 py-1.5 min-w-0 flex-row text-xs",
+            "Copy JSON",
+            onClick --> { _ =>
+              val jsonString = js.JSON.stringify(findNutritionFacts(result).getOrElse(js.Dynamic.literal()), null.asInstanceOf[js.Array[js.Any]], 2)
+              dom.window.navigator.clipboard.writeText(jsonString)
+            }
+          ),
+          onClear.map { cb =>
+            button(
+              cls := "action-btn px-3 py-1.5 min-w-0 flex-row text-xs bg-red-50 text-red-600 border-red-200 hover:bg-red-100",
+              "Clear",
+              onClick --> (_ => cb())
+            )
+          }.getOrElse(emptyNode)
+        )
+      ),
+      renderNutritionFacts(result)
+    )
+
   val appElement = div(
     cls := "max-w-[1200px] w-[96vw] mx-auto text-center",
     div(
@@ -490,6 +533,15 @@ object Components:
                       "View",
                       onClick --> { _ =>
                         extractionResult.set(Some(item.parsedData))
+                        comparisonResult.set(None)
+                        showHistory.set(false)
+                      }
+                    ),
+                    button(
+                      cls := "action-btn px-3 py-1 text-xs min-w-0 bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100",
+                      "Compare",
+                      onClick --> { _ =>
+                        comparisonResult.set(Some(item.parsedData))
                         showHistory.set(false)
                       }
                     )
@@ -542,44 +594,29 @@ object Components:
     },
     div(
       cls := "flex flex-col lg:flex-row flex-wrap justify-center items-start gap-8 my-6 w-full",
-      child.maybe <-- imagePreviewUrl.signal.combineWith(selectedImage.signal).map {
-        case (Some(url), Some(file)) =>
-          Some(
-            div(
-              cls := "flex-1 min-w-[380px] lg:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto lg:mx-0",
-              child.maybe <-- status.signal.map { s =>
-                Option.when(s.nonEmpty)(h2(cls := "status-text", s))
-              },
-              div(cls := "image-filename mb-3 text-sm text-gray-500 break-all font-medium text-left w-full", file.name),
-              img(cls := "image-preview w-full max-h-[70vh] block border border-gray-300 rounded-lg object-contain bg-white p-1 shadow-md", src := url, alt := "Selected image preview")
-            )
-          )
-        case _ => None
-      },
-      child.maybe <-- extractionResult.signal.map(_.map { result =>
-        div(
-          cls := "flex-1 min-w-[380px] lg:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto lg:mx-0",
-          tabIndex := -1,
-          onMountCallback { ctx =>
-            val node = ctx.thisNode.ref.asInstanceOf[js.Dynamic]
-            node.scrollIntoView(js.Dynamic.literal(behavior = "smooth", block = "start"))
-            node.focus()
-          },
+      child <-- extractionResult.signal.combineWith(comparisonResult.signal, imagePreviewUrl.signal, selectedImage.signal, status.signal).map {
+        case (Some(res1), Some(res2), _, _, _) =>
+          // COMPARISON MODE: Hide image, show two side-by-side cards
           div(
-            cls := "flex justify-between items-center w-full mb-5",
-            h2(cls := "status-text mb-0", "Result"),
-            button(
-              cls := "action-btn px-3 py-1.5 min-w-0 flex-row text-xs",
-              "Copy JSON",
-              onClick --> { _ =>
-                val jsonString = js.JSON.stringify(findNutritionFacts(result).getOrElse(js.Dynamic.literal()), null.asInstanceOf[js.Array[js.Any]], 2)
-                dom.window.navigator.clipboard.writeText(jsonString)
-              }
-            )
-          ),
-          renderNutritionFacts(result)
-        )
-      })
+            cls := "w-full flex flex-col lg:flex-row gap-8 justify-center items-start",
+            renderResultCard(res1, "Current Item"),
+            renderResultCard(res2, "Comparing With", onClear = Some(() => comparisonResult.set(None)))
+          )
+
+        case (Some(res), None, maybeUrl, maybeFile, s) =>
+          // STANDARD MODE: Show Image + Current Result
+          div(
+            cls := "w-full flex flex-col lg:flex-row gap-8 justify-center items-start",
+            renderImagePreview(maybeUrl, maybeFile, s),
+            renderResultCard(res, "Result")
+          )
+
+        case (None, _, maybeUrl, maybeFile, s) =>
+          // INITIAL MODE: Only show Image preview if exists
+          maybeUrl.zip(maybeFile).map { case (url, file) =>
+            renderImagePreview(Some(url), Some(file), s)
+          }.getOrElse(emptyNode)
+      }
     )
   )
 
