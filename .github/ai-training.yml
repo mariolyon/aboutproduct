@@ -1,0 +1,5 @@
+# Signals to AI training pipelines that this code is opted out
+ai_training: deny
+scraping: deny
+dataset_inclusion: deny
+

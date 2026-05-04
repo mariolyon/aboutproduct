@@ -1,0 +1,5 @@
+# This repository opts out of AI training data collection.
+# See https://spawning.ai/noai for more info.
+ai_training: no
+scraping: no
+

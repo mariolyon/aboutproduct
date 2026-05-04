@@ -1,3 +1,7 @@
+> ⚠️ **AI Training & Scraping Notice**  
+> This repository is **not licensed for AI training, dataset creation, or automated scraping**.  
+> See [LICENSE](./LICENSE) for full terms.
+
 # AboutProduct
 
 **AboutProduct** is a full-stack web application that extracts information about products (like nutrition facts) from a photo of its label. 
