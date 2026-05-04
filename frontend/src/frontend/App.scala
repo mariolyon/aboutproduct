@@ -103,7 +103,7 @@ object JsonUtils:
       smallPrint = stringField(nutrition, "small_print")
     )
 
-  case class HistoryItem(id: String, timestamp: Double, title: String, dataStr: String) {
+  case class HistoryItem(id: String, timestamp: Double, title: String, dataStr: String, imageBlob: Option[dom.Blob]) {
     def parsedData: js.Dynamic = js.JSON.parse(dataStr).asInstanceOf[js.Dynamic]
   }
 
@@ -148,11 +148,13 @@ object JsonUtils:
         request.onsuccess = { (_: dom.Event) =>
           val results = request.result.asInstanceOf[js.Array[js.Dynamic]]
           val items = results.toSeq.map { item =>
+            val blobValue = item.selectDynamic("imageBlob")
             HistoryItem(
               id = item.selectDynamic("id").asInstanceOf[String],
               timestamp = item.selectDynamic("timestamp").asInstanceOf[Double],
               title = item.selectDynamic("title").asInstanceOf[String],
-              dataStr = item.selectDynamic("dataStr").asInstanceOf[String]
+              dataStr = item.selectDynamic("dataStr").asInstanceOf[String],
+              imageBlob = if js.isUndefined(blobValue) || blobValue == null then None else Some(blobValue.asInstanceOf[dom.Blob])
             )
           }.sortBy(-_.timestamp)
           promise.success(items)
@@ -174,13 +176,44 @@ object JsonUtils:
           id = item.id,
           timestamp = item.timestamp,
           title = item.title,
-          dataStr = item.dataStr
+          dataStr = item.dataStr,
+          imageBlob = item.imageBlob.orNull
         )
         val request = store.put(jsItem)
 
         request.onsuccess = { (_: dom.Event) => promise.success(()) }
         request.onerror = { (event: dom.ErrorEvent) =>
           promise.failure(new Exception(s"Save error: ${event.message}"))
+        }
+
+        promise.future
+      }
+
+    def deleteItem(id: String): Future[Unit] =
+      openDB().flatMap { db =>
+        val promise = scala.concurrent.Promise[Unit]()
+        val transaction = db.transaction(StoreName, dom.IDBTransactionMode.readwrite)
+        val store = transaction.objectStore(StoreName)
+        val request = store.delete(id)
+
+        request.onsuccess = { (_: dom.Event) => promise.success(()) }
+        request.onerror = { (event: dom.ErrorEvent) =>
+          promise.failure(new Exception(s"Delete error: ${event.message}"))
+        }
+
+        promise.future
+      }
+
+    def clearHistory(): Future[Unit] =
+      openDB().flatMap { db =>
+        val promise = scala.concurrent.Promise[Unit]()
+        val transaction = db.transaction(StoreName, dom.IDBTransactionMode.readwrite)
+        val store = transaction.objectStore(StoreName)
+        val request = store.clear()
+
+        request.onsuccess = { (_: dom.Event) => promise.success(()) }
+        request.onerror = { (event: dom.ErrorEvent) =>
+          promise.failure(new Exception(s"Clear error: ${event.message}"))
         }
 
         promise.future
@@ -197,7 +230,8 @@ object JsonUtils:
               id = item.selectDynamic("id").asInstanceOf[String],
               timestamp = item.selectDynamic("timestamp").asInstanceOf[Double],
               title = item.selectDynamic("title").asInstanceOf[String],
-              dataStr = item.selectDynamic("dataStr").asInstanceOf[String]
+              dataStr = item.selectDynamic("dataStr").asInstanceOf[String],
+              imageBlob = None
             )
           }
           // Save all to IndexedDB
@@ -270,6 +304,7 @@ object Components:
   val imagePreviewUrl = Var(Option.empty[String])
   val activeJobId = Var(Option.empty[String])
   val extractionResult = Var(Option.empty[js.Dynamic])
+  val currentResultId = Var(Option.empty[String])
   val scanHistory = Var(Seq.empty[HistoryItem])
   val showHistory = Var(false)
 
@@ -278,6 +313,7 @@ object Components:
     scanHistory.set(history)
   }
   val comparisonResult = Var(Option.empty[js.Dynamic])
+  val comparisonResultId = Var(Option.empty[String])
   val cameraActive = Var(false)
   val videoStreamRef = Var(Option.empty[dom.MediaStream])
   val cameraVideoElement = Var(Option.empty[dom.HTMLVideoElement])
@@ -312,6 +348,7 @@ object Components:
                   val parsed = js.JSON.parse(payload).asInstanceOf[js.Dynamic]
                   if hasCompletedResult(parsed) then
                     extractionResult.set(Some(parsed))
+                    currentResultId.set(Some(jobId))
                     activeJobId.set(None)
                     status.set("Analysis complete")
 
@@ -322,7 +359,8 @@ object Components:
                       id = jobId,
                       timestamp = js.Date.now(),
                       title = if title.nonEmpty && title != "n/a" then title else s"Scan ${new js.Date().toLocaleTimeString()}",
-                      dataStr = js.JSON.stringify(parsed)
+                      dataStr = js.JSON.stringify(parsed),
+                      imageBlob = selectedImage.now().map(_.asInstanceOf[dom.Blob])
                     )
                     scanHistory.update { history =>
                       val updated = newItem +: history.take(19) // Keep last 20 in UI Var
@@ -441,6 +479,9 @@ object Components:
     selectedImage.now() match
       case Some(image) =>
         extractionResult.set(None)
+        currentResultId.set(None)
+        comparisonResult.set(None)
+        comparisonResultId.set(None)
         activeJobId.set(None)
         status.set("uploading ...")
 
@@ -583,11 +624,24 @@ object Components:
         "History"
       )
     ),
-    child.maybe <-- showHistory.signal.combineWith(scanHistory.signal).map { case (show, history) =>
+    child.maybe <-- showHistory.signal.combineWith(scanHistory.signal, currentResultId.signal, comparisonResultId.signal).map { case (show, history, currentId, compId) =>
       Option.when(show) {
         div(
           cls := "bg-white border border-gray-200 rounded-xl shadow-lg p-6 mb-6 max-w-2xl mx-auto text-left",
-          h3(cls := "text-lg font-bold mb-4", "Scan History"),
+          div(
+            cls := "flex justify-between items-center mb-4",
+            h3(cls := "text-lg font-bold", "Scan History"),
+            button(
+              cls := "text-xs text-red-500 hover:text-red-700 font-medium",
+              "Clear All",
+              onClick --> { _ =>
+                if dom.window.confirm("Are you sure you want to clear all history?") then
+                  IndexedDBUtils.clearHistory().foreach { _ =>
+                    scanHistory.set(Seq.empty)
+                  }
+              }
+            )
+          ),
           if history.isEmpty then
             p(cls := "text-gray-500 italic", "No scans yet.")
           else
@@ -604,20 +658,51 @@ object Components:
                   div(
                     cls := "flex gap-2",
                     button(
-                      cls := "action-btn px-3 py-1 text-xs min-w-0",
+                      cls := "action-btn px-3 py-1 text-xs min-w-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200",
+                      disabled <-- currentResultId.signal.combineWith(comparisonResultId.signal).map { case (currId, compId) =>
+                        currId.contains(item.id) && compId.isEmpty
+                      },
                       "View",
                       onClick --> { _ =>
                         extractionResult.set(Some(item.parsedData))
+                        currentResultId.set(Some(item.id))
+                        item.imageBlob.foreach { blob =>
+                          imagePreviewUrl.now().foreach(dom.URL.revokeObjectURL)
+                          imagePreviewUrl.set(Some(dom.URL.createObjectURL(blob)))
+                          selectedImage.set(None) // Clear file ref since we're using stored blob
+                        }
                         comparisonResult.set(None)
+                        comparisonResultId.set(None)
                         showHistory.set(false)
                       }
                     ),
                     button(
-                      cls := "action-btn px-3 py-1 text-xs min-w-0 bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100",
+                      cls := "action-btn px-3 py-1 text-xs min-w-0 bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200",
+                      disabled <-- currentResultId.signal.combineWith(comparisonResultId.signal).map { case (currId, compId) =>
+                        currId.isEmpty || currId.contains(item.id) || compId.contains(item.id)
+                      },
                       "Compare",
                       onClick --> { _ =>
                         comparisonResult.set(Some(item.parsedData))
+                        comparisonResultId.set(Some(item.id))
+                        item.imageBlob.foreach { blob =>
+                          // If we are comparing, we might want to keep the current image or show the new one.
+                          // Comparison mode currently hides the image, so setting it is mostly for when we exit comparison.
+                          imagePreviewUrl.now().foreach(dom.URL.revokeObjectURL)
+                          imagePreviewUrl.set(Some(dom.URL.createObjectURL(blob)))
+                          selectedImage.set(None)
+                        }
                         showHistory.set(false)
+                      }
+                    ),
+                    button(
+                      cls := "action-btn px-3 py-1 text-xs min-w-0 bg-red-50 text-red-600 border-red-200 hover:bg-red-100",
+                      "Clear",
+                      onClick --> { _ =>
+                        if dom.window.confirm(s"Delete '${item.title}'?") then
+                          IndexedDBUtils.deleteItem(item.id).foreach { _ =>
+                            scanHistory.update(_.filterNot(_.id == item.id))
+                          }
                       }
                     )
                   )
@@ -675,7 +760,10 @@ object Components:
           div(
             cls := "w-full flex flex-col lg:flex-row gap-8 justify-center items-start",
             renderResultCard(res1, "Current Item"),
-            renderResultCard(res2, "Comparing With", onClear = Some(() => comparisonResult.set(None)))
+            renderResultCard(res2, "Comparing With", onClear = Some(() => {
+              comparisonResult.set(None)
+              comparisonResultId.set(None)
+            }))
           )
 
         case (Some(res), None, maybeUrl, maybeFile, s) =>
