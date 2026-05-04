@@ -103,6 +103,40 @@ object JsonUtils:
       smallPrint = stringField(nutrition, "small_print")
     )
 
+  case class HistoryItem(id: String, timestamp: Double, title: String, dataStr: String) {
+    def parsedData: js.Dynamic = js.JSON.parse(dataStr).asInstanceOf[js.Dynamic]
+  }
+
+  object StorageUtils:
+    val HistoryKey = "aboutproduct_history"
+
+    def loadHistory(): Seq[HistoryItem] =
+      val stored = dom.window.localStorage.getItem(HistoryKey)
+      if stored != null && stored.nonEmpty then
+        try
+          val arr = js.JSON.parse(stored).asInstanceOf[js.Array[js.Dynamic]]
+          arr.toSeq.map { item =>
+            HistoryItem(
+              id = item.selectDynamic("id").asInstanceOf[String],
+              timestamp = item.selectDynamic("timestamp").asInstanceOf[Double],
+              title = item.selectDynamic("title").asInstanceOf[String],
+              dataStr = item.selectDynamic("dataStr").asInstanceOf[String]
+            )
+          }
+        catch case _ => Seq.empty
+      else Seq.empty
+
+    def saveHistory(items: Seq[HistoryItem]): Unit =
+      val jsArray = js.Array(items.map { item =>
+        js.Dynamic.literal(
+          id = item.id,
+          timestamp = item.timestamp,
+          title = item.title,
+          dataStr = item.dataStr
+        )
+      }: _*)
+      dom.window.localStorage.setItem(HistoryKey, js.JSON.stringify(jsArray))
+
 object Components:
   import JsonUtils.*
 
@@ -160,11 +194,14 @@ object Components:
     )
 
 @main def app(): Unit =
+  import JsonUtils.*
   val status = Var("Select image to begin")
   val selectedImage = Var(Option.empty[dom.File])
   val imagePreviewUrl = Var(Option.empty[String])
   val activeJobId = Var(Option.empty[String])
   val extractionResult = Var(Option.empty[js.Dynamic])
+  val scanHistory = Var(StorageUtils.loadHistory())
+  val showHistory = Var(false)
   val cameraActive = Var(false)
   val videoStreamRef = Var(Option.empty[dom.MediaStream])
   val cameraVideoElement = Var(Option.empty[dom.HTMLVideoElement])
@@ -201,6 +238,21 @@ object Components:
                     extractionResult.set(Some(parsed))
                     activeJobId.set(None)
                     status.set("Analysis complete")
+
+                    // Save to history
+                    val nutritionFacts = extractNutritionFacts(parsed)
+                    val title = nutritionFacts.title
+                    val newItem = HistoryItem(
+                      id = jobId,
+                      timestamp = js.Date.now(),
+                      title = if title.nonEmpty && title != "n/a" then title else s"Scan ${new js.Date().toLocaleTimeString()}",
+                      dataStr = js.JSON.stringify(parsed)
+                    )
+                    scanHistory.update { history =>
+                      val updated = newItem +: history.take(19) // Keep last 20
+                      StorageUtils.saveHistory(updated)
+                      updated
+                    }
                   else if isProcessingStatus(parsed) then
                     status.set("processing ...")
                     continuePolling()
@@ -398,8 +450,56 @@ object Components:
           svg.circle(svg.cx := "12", svg.cy := "13", svg.r := "3")
         ),
         "Take Photo"
+      ),
+      // History Button
+      button(
+        cls := "action-btn",
+        onClick --> (_ => showHistory.update(!_)),
+        svg.svg(
+          svg.viewBox := "0 0 24 24",
+          svg.fill := "none",
+          svg.stroke := "currentColor",
+          svg.strokeWidth := "2",
+          svg.path(svg.d := "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z")
+        ),
+        "History"
       )
     ),
+    child.maybe <-- showHistory.signal.combineWith(scanHistory.signal).map { case (show, history) =>
+      Option.when(show) {
+        div(
+          cls := "bg-white border border-gray-200 rounded-xl shadow-lg p-6 mb-6 max-w-2xl mx-auto text-left",
+          h3(cls := "text-lg font-bold mb-4", "Scan History"),
+          if history.isEmpty then
+            p(cls := "text-gray-500 italic", "No scans yet.")
+          else
+            div(
+              cls := "flex flex-col gap-3",
+              history.map { item =>
+                div(
+                  cls := "flex justify-between items-center p-3 border border-gray-100 rounded-lg hover:bg-gray-50",
+                  div(
+                    cls := "flex flex-col",
+                    span(cls := "font-semibold text-gray-800", item.title),
+                    span(cls := "text-xs text-gray-500", new js.Date(item.timestamp).toLocaleString())
+                  ),
+                  div(
+                    cls := "flex gap-2",
+                    button(
+                      cls := "action-btn px-3 py-1 text-xs min-w-0",
+                      "View",
+                      onClick --> { _ =>
+                        extractionResult.set(Some(item.parsedData))
+                        showHistory.set(false)
+                      }
+                    )
+                  )
+                )
+              }
+            )
+        )
+      }
+    },
     child.maybe <-- status.signal.combineWith(selectedImage.signal).map { case (s, imgOpt) =>
       Option.when(s.nonEmpty && imgOpt.isEmpty)(h2(cls := "status-text", s))
     },
