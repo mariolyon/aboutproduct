@@ -107,15 +107,92 @@ object JsonUtils:
     def parsedData: js.Dynamic = js.JSON.parse(dataStr).asInstanceOf[js.Dynamic]
   }
 
-  object StorageUtils:
-    val HistoryKey = "aboutproduct_history"
+  object IndexedDBUtils:
+    val DBName = "AboutProductDB"
+    val StoreName = "scans"
+    val Version = 1
 
-    def loadHistory(): Seq[HistoryItem] =
+    def openDB(): Future[dom.IDBDatabase] =
+      val promise = scala.concurrent.Promise[dom.IDBDatabase]()
+      val maybeIndexedDB = dom.window.indexedDB.toOption
+
+      maybeIndexedDB match
+        case Some(idb) =>
+          val request = idb.open(DBName, Version)
+
+          request.onupgradeneeded = { (event: dom.IDBVersionChangeEvent) =>
+            val db = request.result.asInstanceOf[dom.IDBDatabase]
+            if !db.objectStoreNames.contains(StoreName) then
+              db.createObjectStore(StoreName, js.Dynamic.literal(keyPath = "id").asInstanceOf[dom.IDBCreateObjectStoreOptions])
+          }
+
+          request.onsuccess = { (_: dom.Event) =>
+            promise.success(request.result.asInstanceOf[dom.IDBDatabase])
+          }
+
+          request.onerror = { (event: dom.ErrorEvent) =>
+            promise.failure(new Exception(s"IndexedDB error: ${event.message}"))
+          }
+        case None =>
+          promise.failure(new Exception("IndexedDB not supported in this browser"))
+
+      promise.future
+
+    def loadHistory(): Future[Seq[HistoryItem]] =
+      openDB().flatMap { db =>
+        val promise = scala.concurrent.Promise[Seq[HistoryItem]]()
+        val transaction = db.transaction(StoreName, dom.IDBTransactionMode.readonly)
+        val store = transaction.objectStore(StoreName)
+        val request = store.getAll()
+
+        request.onsuccess = { (_: dom.Event) =>
+          val results = request.result.asInstanceOf[js.Array[js.Dynamic]]
+          val items = results.toSeq.map { item =>
+            HistoryItem(
+              id = item.selectDynamic("id").asInstanceOf[String],
+              timestamp = item.selectDynamic("timestamp").asInstanceOf[Double],
+              title = item.selectDynamic("title").asInstanceOf[String],
+              dataStr = item.selectDynamic("dataStr").asInstanceOf[String]
+            )
+          }.sortBy(-_.timestamp)
+          promise.success(items)
+        }
+
+        request.onerror = { (event: dom.ErrorEvent) =>
+          promise.failure(new Exception(s"Load error: ${event.message}"))
+        }
+
+        promise.future
+      }
+
+    def saveItem(item: HistoryItem): Future[Unit] =
+      openDB().flatMap { db =>
+        val promise = scala.concurrent.Promise[Unit]()
+        val transaction = db.transaction(StoreName, dom.IDBTransactionMode.readwrite)
+        val store = transaction.objectStore(StoreName)
+        val jsItem = js.Dynamic.literal(
+          id = item.id,
+          timestamp = item.timestamp,
+          title = item.title,
+          dataStr = item.dataStr
+        )
+        val request = store.put(jsItem)
+
+        request.onsuccess = { (_: dom.Event) => promise.success(()) }
+        request.onerror = { (event: dom.ErrorEvent) =>
+          promise.failure(new Exception(s"Save error: ${event.message}"))
+        }
+
+        promise.future
+      }
+
+    def migrateFromLocalStorage(): Future[Unit] =
+      val HistoryKey = "aboutproduct_history"
       val stored = dom.window.localStorage.getItem(HistoryKey)
       if stored != null && stored.nonEmpty then
         try
           val arr = js.JSON.parse(stored).asInstanceOf[js.Array[js.Dynamic]]
-          arr.toSeq.map { item =>
+          val items = arr.toSeq.map { item =>
             HistoryItem(
               id = item.selectDynamic("id").asInstanceOf[String],
               timestamp = item.selectDynamic("timestamp").asInstanceOf[Double],
@@ -123,19 +200,12 @@ object JsonUtils:
               dataStr = item.selectDynamic("dataStr").asInstanceOf[String]
             )
           }
-        catch case _ => Seq.empty
-      else Seq.empty
-
-    def saveHistory(items: Seq[HistoryItem]): Unit =
-      val jsArray = js.Array(items.map { item =>
-        js.Dynamic.literal(
-          id = item.id,
-          timestamp = item.timestamp,
-          title = item.title,
-          dataStr = item.dataStr
-        )
-      }: _*)
-      dom.window.localStorage.setItem(HistoryKey, js.JSON.stringify(jsArray))
+          // Save all to IndexedDB
+          Future.sequence(items.map(saveItem)).map { _ =>
+            dom.window.localStorage.removeItem(HistoryKey)
+          }
+        catch case _ => Future.successful(())
+      else Future.successful(())
 
 object Components:
   import JsonUtils.*
@@ -200,8 +270,13 @@ object Components:
   val imagePreviewUrl = Var(Option.empty[String])
   val activeJobId = Var(Option.empty[String])
   val extractionResult = Var(Option.empty[js.Dynamic])
-  val scanHistory = Var(StorageUtils.loadHistory())
+  val scanHistory = Var(Seq.empty[HistoryItem])
   val showHistory = Var(false)
+
+  // Initialize History from IndexedDB
+  IndexedDBUtils.migrateFromLocalStorage().flatMap(_ => IndexedDBUtils.loadHistory()).foreach { history =>
+    scanHistory.set(history)
+  }
   val comparisonResult = Var(Option.empty[js.Dynamic])
   val cameraActive = Var(false)
   val videoStreamRef = Var(Option.empty[dom.MediaStream])
@@ -250,8 +325,8 @@ object Components:
                       dataStr = js.JSON.stringify(parsed)
                     )
                     scanHistory.update { history =>
-                      val updated = newItem +: history.take(19) // Keep last 20
-                      StorageUtils.saveHistory(updated)
+                      val updated = newItem +: history.take(19) // Keep last 20 in UI Var
+                      IndexedDBUtils.saveItem(newItem)
                       updated
                     }
                   else if isProcessingStatus(parsed) then
