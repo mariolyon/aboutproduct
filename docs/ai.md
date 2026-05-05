@@ -69,3 +69,17 @@ The project is built using the **Mill** build tool and consists of three modules
 
 - **Build/Run command:** `mill backend.run`
 - To run the application successfully, you must ensure `.env` is populated with `PROJECT_ID` and `API_KEY` (use `docs/.env.template` as a reference).
+- **Specification Maintenance:** You MUST update this document (or relevant `.md` files in `docs/`) after every code change that alters system behavior or architecture to ensure the "source of truth" remains accurate.
+
+## 6. Current System Behavior
+
+### History Drawer & Comparison Mode
+- **State Tracking:** The system tracks the `currentResultId` (primary slot) and `comparisonResultId` (comparison slot).
+- **View Button Logic:** 
+    - Disabled if the item is already in the primary slot AND no comparison is active.
+    - Enabled during comparison mode to allow users to "exit" comparison by selecting a single item to view.
+- **Compare Button Logic:**
+    - Disabled if no item is currently viewed.
+    - Disabled if the item is already in the primary slot.
+    - Disabled if the item is already in the comparison slot.
+- **Transition Logic:** Clicking "View" on any item while in comparison mode clears the comparison state and resets the UI to single-view mode for that item.
