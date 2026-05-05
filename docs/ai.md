@@ -38,10 +38,13 @@ The project is built using the **Mill** build tool and consists of three modules
 - **Key Behaviors:**
   - **Reactivity:** Uses Laminar's `Var`, `Signal`, and `EventStream`. *Do not suggest React or generic JS frameworks.*
   - **State Machine:**
-    1. Uploading image (creates `job_id`).
-    2. Processing (polls `GET /api/jobs/{id}` every 10s until a `204` becomes a `200`).
-    3. Timeout (stops polling after 5 mins and shows "Failed").
-    4. Success (renders DOM elements to match the visual target `docs/nutrilion_label.png` using data matching `docs/expected.json`).
+    1. **Upload:** Supports single or multiple image selection.
+    2. **Primary Item:** The first selected image is previewed immediately and its job is tracked as the "main" operation.
+    3. **Background Processing:** Additional images are uploaded and processed in parallel.
+    4. **Polling:** Each `job_id` is polled independently every 10s.
+    5. **History Integration:** Background jobs are immediately added to History with a "Processing" status.
+    6. **Completion:** Upon success, History items are updated with extracted data; for the primary item, the main UI also updates to show the result.
+    7. **Timeout:** Individual jobs stop polling after 5 mins and show "Failed" in History.
 
 ## 3. API Contract (`/api`)
 
@@ -74,11 +77,14 @@ The project is built using the **Mill** build tool and consists of three modules
 ## 6. Current System Behavior
 
 ### History Drawer & Comparison Mode
-- **State Tracking:** The system tracks the `currentResultId` (primary slot) and `comparisonResultId` (comparison slot).
+- **State Tracking:** The system tracks the `currentResultId` (primary slot), `comparisonResultId` (comparison slot), and `activeJobIds` (set of ongoing background jobs).
+- **History Items:** Each item in history has a `status` (`completed`, `processing`, or `failed`).
 - **View Button Logic:** 
+    - Disabled if the item is not `completed`.
     - Disabled if the item is already in the primary slot AND no comparison is active.
     - Enabled during comparison mode to allow users to "exit" comparison by selecting a single item to view.
 - **Compare Button Logic:**
+    - Disabled if the item is not `completed`.
     - Disabled if no item is currently viewed.
     - Disabled if the item is already in the primary slot.
     - Disabled if the item is already in the comparison slot.

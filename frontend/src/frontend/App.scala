@@ -103,7 +103,7 @@ object JsonUtils:
       smallPrint = stringField(nutrition, "small_print")
     )
 
-  case class HistoryItem(id: String, timestamp: Double, title: String, dataStr: String, imageBlob: Option[dom.Blob]) {
+  case class HistoryItem(id: String, timestamp: Double, title: String, dataStr: String, imageBlob: Option[dom.Blob], status: String = "completed") {
     def parsedData: js.Dynamic = js.JSON.parse(dataStr).asInstanceOf[js.Dynamic]
   }
 
@@ -149,12 +149,14 @@ object JsonUtils:
           val results = request.result.asInstanceOf[js.Array[js.Dynamic]]
           val items = results.toSeq.map { item =>
             val blobValue = item.selectDynamic("imageBlob")
+            val statusValue = item.selectDynamic("status")
             HistoryItem(
               id = item.selectDynamic("id").asInstanceOf[String],
               timestamp = item.selectDynamic("timestamp").asInstanceOf[Double],
               title = item.selectDynamic("title").asInstanceOf[String],
               dataStr = item.selectDynamic("dataStr").asInstanceOf[String],
-              imageBlob = if js.isUndefined(blobValue) || blobValue == null then None else Some(blobValue.asInstanceOf[dom.Blob])
+              imageBlob = if js.isUndefined(blobValue) || blobValue == null then None else Some(blobValue.asInstanceOf[dom.Blob]),
+              status = if js.isUndefined(statusValue) || statusValue == null then "completed" else statusValue.asInstanceOf[String]
             )
           }.sortBy(-_.timestamp)
           promise.success(items)
@@ -177,7 +179,8 @@ object JsonUtils:
           timestamp = item.timestamp,
           title = item.title,
           dataStr = item.dataStr,
-          imageBlob = item.imageBlob.orNull
+          imageBlob = item.imageBlob.orNull,
+          status = item.status
         )
         val request = store.put(jsItem)
 
@@ -231,7 +234,8 @@ object JsonUtils:
               timestamp = item.selectDynamic("timestamp").asInstanceOf[Double],
               title = item.selectDynamic("title").asInstanceOf[String],
               dataStr = item.selectDynamic("dataStr").asInstanceOf[String],
-              imageBlob = None
+              imageBlob = None,
+              status = "completed"
             )
           }
           // Save all to IndexedDB
@@ -302,7 +306,7 @@ object Components:
   val status = Var("Select image to begin")
   val selectedImage = Var(Option.empty[dom.File])
   val imagePreviewUrl = Var(Option.empty[String])
-  val activeJobId = Var(Option.empty[String])
+  val activeJobIds = Var(Set.empty[String])
   val extractionResult = Var(Option.empty[js.Dynamic])
   val currentResultId = Var(Option.empty[String])
   val scanHistory = Var(Seq.empty[HistoryItem])
@@ -321,21 +325,33 @@ object Components:
   import JsonUtils.*
   import Components.*
 
-  def pollJobStatus(jobId: String): Unit =
+  def pollJobStatus(jobId: String, isMain: Boolean): Unit =
     val pollDelayMs = 10000
     val maxPollingDurationMs = 5 * 60 * 1000
     val startedAtMs = js.Date.now()
 
+    def markAsFailed(): Unit =
+      activeJobIds.update(_ - jobId)
+      scanHistory.update { history =>
+        history.map { item =>
+          if item.id == jobId then
+            val updated = item.copy(status = "failed")
+            IndexedDBUtils.saveItem(updated)
+            updated
+          else item
+        }
+      }
+      if isMain then status.set("Failed")
+
     def continuePolling(): Unit =
-      if activeJobId.now().contains(jobId) then
+      if activeJobIds.now().contains(jobId) then
         setTimeout(pollDelayMs):
           pollOnce()
 
     def pollOnce(): Unit =
-      if !activeJobId.now().contains(jobId) then ()
+      if !activeJobIds.now().contains(jobId) then ()
       else if js.Date.now() - startedAtMs > maxPollingDurationMs then
-        activeJobId.set(None)
-        status.set("Failed")
+        markAsFailed()
       else
         val future = dom.fetch(s"/api/jobs/$jobId").toFuture
 
@@ -347,52 +363,51 @@ object Components:
                 try
                   val parsed = js.JSON.parse(payload).asInstanceOf[js.Dynamic]
                   if hasCompletedResult(parsed) then
-                    extractionResult.set(Some(parsed))
-                    currentResultId.set(Some(jobId))
-                    activeJobId.set(None)
-                    status.set("Analysis complete")
-
-                    // Save to history
                     val nutritionFacts = extractNutritionFacts(parsed)
                     val title = nutritionFacts.title
-                    val newItem = HistoryItem(
-                      id = jobId,
-                      timestamp = js.Date.now(),
-                      title = if title.nonEmpty && title != "n/a" then title else s"Scan ${new js.Date().toLocaleTimeString()}",
-                      dataStr = js.JSON.stringify(parsed),
-                      imageBlob = selectedImage.now().map(_.asInstanceOf[dom.Blob])
-                    )
+                    val finalTitle = if title.nonEmpty && title != "n/a" then title else s"Scan ${new js.Date().toLocaleTimeString()}"
+
+                    activeJobIds.update(_ - jobId)
                     scanHistory.update { history =>
-                      val updated = newItem +: history.take(19) // Keep last 20 in UI Var
-                      IndexedDBUtils.saveItem(newItem)
-                      updated
+                      history.map { item =>
+                        if item.id == jobId then
+                          val updated = item.copy(
+                            status = "completed",
+                            title = finalTitle,
+                            dataStr = payload
+                          )
+                          IndexedDBUtils.saveItem(updated)
+                          updated
+                        else item
+                      }
                     }
+
+                    if isMain then
+                      extractionResult.set(Some(parsed))
+                      currentResultId.set(Some(jobId))
+                      status.set("Analysis complete")
                   else if isProcessingStatus(parsed) then
-                    status.set("processing ...")
+                    if isMain then status.set("processing ...")
                     continuePolling()
                   else
-                    status.set("processing ...")
+                    if isMain then status.set("processing ...")
                     continuePolling()
                 catch
                   case _: Throwable =>
-                    activeJobId.set(None)
-                    status.set("Failed")
+                    markAsFailed()
               }
               payloadFuture.failed.foreach { _ =>
-                activeJobId.set(None)
-                status.set("Failed")
+                markAsFailed()
               }
             case 204 =>
-              status.set("processing ...")
+              if isMain then status.set("processing ...")
               continuePolling()
             case _ =>
-              activeJobId.set(None)
-              status.set("Failed")
+              markAsFailed()
         }
 
         future.failed.foreach { _ =>
-          activeJobId.set(None)
-          status.set("Failed")
+          markAsFailed()
         }
 
     pollOnce()
@@ -465,7 +480,7 @@ object Components:
           setSelectedImage(Some(file))
           status.set("Photo captured")
           stopCamera()
-          readImage()
+          uploadImage(file, isMain = true)
         }
         blobFuture.failed.foreach { _ =>
           status.set("Failed")
@@ -475,49 +490,62 @@ object Components:
         status.set("Failed")
         stopCamera()
 
-  def readImage(): Unit =
-    selectedImage.now() match
-      case Some(image) =>
-        extractionResult.set(None)
-        currentResultId.set(None)
-        comparisonResult.set(None)
-        comparisonResultId.set(None)
-        activeJobId.set(None)
-        status.set("uploading ...")
+  def uploadImage(image: dom.File, isMain: Boolean): Unit =
+    if isMain then
+      extractionResult.set(None)
+      currentResultId.set(None)
+      comparisonResult.set(None)
+      comparisonResultId.set(None)
+      activeJobIds.set(Set.empty)
+      status.set("uploading ...")
 
-        val contentType = image.`type`
-        val requestInit = js.Dynamic
-          .literal(
-            method = "POST",
-            headers = js.Dynamic.literal(
-              "Content-Type" -> (if contentType.nonEmpty then contentType else "application/octet-stream")
-            ),
-            body = image
+    val contentType = image.`type`
+    val requestInit = js.Dynamic
+      .literal(
+        method = "POST",
+        headers = js.Dynamic.literal(
+          "Content-Type" -> (if contentType.nonEmpty then contentType else "application/octet-stream")
+        ),
+        body = image
+      )
+      .asInstanceOf[dom.RequestInit]
+
+    val future = for
+      response <- dom.fetch("/api/jobs", requestInit).toFuture
+      result <- if response.ok then
+        response.text().toFuture.map(Right(_))
+      else
+        Future.successful(Left(response.status.toInt))
+    yield result
+
+    future.foreach {
+      case Right(jobId) =>
+        val normalizedJobId = jobId.trim
+        if normalizedJobId.isEmpty then
+          if isMain then status.set("Failed")
+        else
+          activeJobIds.update(_ + normalizedJobId)
+          if isMain then status.set("processing ...")
+
+          // Create placeholder in history
+          val tempItem = HistoryItem(
+            id = normalizedJobId,
+            timestamp = js.Date.now(),
+            title = image.name,
+            dataStr = "{}",
+            imageBlob = Some(image.asInstanceOf[dom.Blob]),
+            status = "processing"
           )
-          .asInstanceOf[dom.RequestInit]
+          scanHistory.update { history =>
+            val updated = (tempItem +: history).sortBy(-_.timestamp).take(20)
+            IndexedDBUtils.saveItem(tempItem)
+            updated
+          }
 
-        val future = for
-          response <- dom.fetch("/api/jobs", requestInit).toFuture
-          result <- if response.ok then
-            response.text().toFuture.map(Right(_))
-          else
-            Future.successful(Left(response.status.toInt))
-        yield result
-
-        future.foreach {
-          case Right(jobId) =>
-            val normalizedJobId = jobId.trim
-            if normalizedJobId.isEmpty then
-              status.set("Failed")
-            else
-              activeJobId.set(Some(normalizedJobId))
-              status.set("processing ...")
-              pollJobStatus(normalizedJobId)
-          case Left(_) => status.set("Failed")
-        }
-        future.failed.foreach(_ => status.set("Failed"))
-      case None =>
-        status.set("Select an image first")
+          pollJobStatus(normalizedJobId, isMain)
+      case Left(_) => if isMain then status.set("Failed")
+    }
+    future.failed.foreach(_ => if isMain then status.set("Failed"))
 
   def renderImagePreview(urlOpt: Option[String], fileOpt: Option[dom.File], s: String): HtmlElement =
     div(
@@ -587,12 +615,19 @@ object Components:
         input(
           typ := "file",
           accept := "image/*",
+          multiple := true,
           onChange --> { event =>
             val files = event.target.asInstanceOf[dom.HTMLInputElement].files
             stopCamera()
-            val maybeFile = Option(files).flatMap(fileList => Option(fileList.item(0)))
-            setSelectedImage(maybeFile)
-            maybeFile.foreach(_ => readImage())
+            val fileList = (0 until files.length).flatMap(i => Option(files.item(i)))
+            if fileList.nonEmpty then
+              val firstFile = fileList.head
+              setSelectedImage(Some(firstFile))
+              uploadImage(firstFile, isMain = true)
+
+              fileList.tail.foreach { file =>
+                uploadImage(file, isMain = false)
+              }
           }
         )
       ),
@@ -653,14 +688,16 @@ object Components:
                   div(
                     cls := "flex flex-col",
                     span(cls := "font-semibold text-gray-800", item.title),
-                    span(cls := "text-xs text-gray-500", new js.Date(item.timestamp).toLocaleString())
+                    span(cls := "text-xs text-gray-500",
+                      new js.Date(item.timestamp).toLocaleString() + (if item.status != "completed" then s" - ${item.status.capitalize}" else "")
+                    )
                   ),
                   div(
                     cls := "flex gap-2",
                     button(
                       cls := "action-btn px-3 py-1 text-xs min-w-0 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200",
                       disabled <-- currentResultId.signal.combineWith(comparisonResultId.signal).map { case (currId, compId) =>
-                        currId.contains(item.id) && compId.isEmpty
+                        item.status != "completed" || (currId.contains(item.id) && compId.isEmpty)
                       },
                       "View",
                       onClick --> { _ =>
@@ -679,7 +716,7 @@ object Components:
                     button(
                       cls := "action-btn px-3 py-1 text-xs min-w-0 bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-200",
                       disabled <-- currentResultId.signal.combineWith(comparisonResultId.signal).map { case (currId, compId) =>
-                        currId.isEmpty || currId.contains(item.id) || compId.contains(item.id)
+                        item.status != "completed" || currId.isEmpty || currId.contains(item.id) || compId.contains(item.id)
                       },
                       "Compare",
                       onClick --> { _ =>
