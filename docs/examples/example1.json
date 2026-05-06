@@ -1,0 +1,84 @@
+{
+  "nutrition_facts_label": {
+    "title": "Alesto Nut Mix with Macademia roasted and salted",
+    "servings_per_container": 6,
+    "serving_size": [
+      {
+        "quantity": 30,
+        "quantity_unit": "g"
+      }
+    ],
+    "calories": 194,
+    "total_fat": {
+      "quantity": "16.7",
+      "quantity_unit": "g",
+      "percentage_daily_value": 24
+    },
+    "saturated_fat": {
+      "quantity": "2.2",
+      "quantity_unit": "g",
+      "percentage_daily_value": 11
+    },
+    "trans_fat": {
+      "quantity": null,
+      "quantity_unit": null,
+      "percentage_daily_value": null
+    },
+    "cholesterol": {
+      "quantity": null,
+      "quantity_unit": null,
+      "percentage_daily_value": null
+    },
+    "sodium": {
+      "quantity": null,
+      "quantity_unit": null,
+      "percentage_daily_value": null
+    },
+    "carbs": {
+      "total": {
+        "quantity": "3.1",
+        "quantity_unit": "g",
+        "percentage_daily_value": 1
+      },
+      "fiber": {
+        "quantity": null,
+        "quantity_unit": null,
+        "percentage_daily_value": null
+      },
+      "sugars": {
+        "total": {
+          "quantity": "1.6",
+          "quantity_unit": "g",
+          "percentage_daily_value": 2
+        },
+        "added": {
+          "quantity": null,
+          "quantity_unit": null,
+          "percentage_daily_value": null
+        }
+      }
+    },
+    "protein": {
+      "quantity": "6.6",
+      "quantity_unit": "g",
+      "percentage_daily_value": 13
+    },
+    "salt": {
+      "quantity": "0.23",
+      "quantity_unit": "g",
+      "percentage_daily_value": 4
+    },
+    "nutrients": [],
+    "small_print": "RI (reference intake) = Referenzmenge für einen durchschnittlichen Erwachsenen (8400 kJ/2000 kcal)"
+  },
+  "ingredients": [
+    "27.2% Peanuts",
+    "26.9% Cashews",
+    "23.9% Almonds",
+    "9.6% Pecans",
+    "8.9% Macadamia nuts",
+    "Sunflower oil",
+    "Salt",
+    "May contain traces of other nuts."
+  ]
+}

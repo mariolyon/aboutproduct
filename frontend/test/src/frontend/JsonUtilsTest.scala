@@ -120,7 +120,8 @@ class JsonUtilsTest extends FunSuite {
             percentage_daily_value = "25"
           )
         )
-      )
+      ),
+      ingredients = js.Array("Milk", "Vitamin D3")
     )
 
     val res = extractNutritionFacts(input)
@@ -130,8 +131,17 @@ class JsonUtilsTest extends FunSuite {
     assert(res.totalFat == "8 g")
     assert(res.totalCarbs == "12 g")
     assert(res.totalSugars == "12 g")
+    assert(res.ingredients == "Milk, Vitamin D3")
     assert(res.nutrients.length == 1)
     assert(res.nutrients.head.name == "Calcium")
     assert(res.nutrients.head.percentage == "25")
+  }
+
+  test("extractNutritionFacts handles missing ingredients") {
+    val input = js.Dynamic.literal(
+      nutrition_facts_label = js.Dynamic.literal(title = "Water")
+    )
+    val res = extractNutritionFacts(input)
+    assert(res.ingredients == "unknown")
   }
 }

@@ -1,0 +1,75 @@
+{
+  "nutrition_facts_label": {
+    "title": "H-VollMilk 3.5% Fat ",
+    "servings_per_container": 6,
+    "serving_size": [
+      {
+        "quantity": 30,
+        "quantity_unit": "g"
+      }
+    ],
+    "calories": 194,
+    "total_fat": {
+      "quantity": "16.4",
+      "quantity_unit": "g",
+      "percentage_daily_value": 23
+    },
+    "saturated_fat": {
+      "quantity": "2.3",
+      "quantity_unit": "g",
+      "percentage_daily_value": 12
+    },
+    "trans_fat": {
+      "quantity": null,
+      "quantity_unit": null,
+      "percentage_daily_value": null
+    },
+    "cholesterol": {
+      "quantity": null,
+      "quantity_unit": null,
+      "percentage_daily_value": null
+    },
+    "sodium": {
+      "quantity": null,
+      "quantity_unit": null,
+      "percentage_daily_value": null
+    },
+    "carbs": {
+      "total": {
+        "quantity": "3.2",
+        "quantity_unit": "g",
+        "percentage_daily_value": 1
+      },
+      "fiber": {
+        "quantity": null,
+        "quantity_unit": null,
+        "percentage_daily_value": null
+      },
+      "sugars": {
+        "total": {
+          "quantity": "1.7",
+          "quantity_unit": "g",
+          "percentage_daily_value": 2
+        },
+        "added": {
+          "quantity": null,
+          "quantity_unit": null,
+          "percentage_daily_value": null
+        }
+      }
+    },
+    "protein": {
+      "quantity": "7.1",
+      "quantity_unit": "g",
+      "percentage_daily_value": 14
+    },
+    "salt": {
+      "quantity": "0.19",
+      "quantity_unit": "g",
+      "percentage_daily_value": 3
+    },
+    "nutrients": [],
+    "small_print": "RI (Reference Intake) = Reference intake for an average adult (8400 kJ/2000 kcal)"
+  },
+  "ingredients": []
+}

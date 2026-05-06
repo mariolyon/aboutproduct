@@ -68,6 +68,7 @@ object JsonUtils:
     addedSugars: String,
     protein: String,
     nutrients: Seq[Nutrient],
+    ingredients: String,
     smallPrint: String
   )
 
@@ -83,6 +84,10 @@ object JsonUtils:
         stringField(n, "percentage_daily_value")
       )
     }
+
+    val ingredientsList = asArray(dynamicField(result, "ingredients").orElse {
+      dynamicField(result, "result").flatMap(res => dynamicField(res, "ingredients"))
+    }).map(stringify).filter(_.nonEmpty)
 
     NutritionFactsData(
       title = stringField(nutrition, "title"),
@@ -100,6 +105,7 @@ object JsonUtils:
       addedSugars = dynamicField(sugars.getOrElse(js.Dynamic.literal()), "added").map(quantityWithUnit).getOrElse("n/a"),
       protein = dynamicField(nutrition, "protein").map(quantityWithUnit).getOrElse("n/a"),
       nutrients = nutrients,
+      ingredients = if ingredientsList.nonEmpty then ingredientsList.mkString(", ") else "unknown",
       smallPrint = stringField(nutrition, "small_print")
     )
 
@@ -298,6 +304,11 @@ object Components:
         )
       else
         emptyNode,
+      p(
+        cls := "nf-ingredients",
+        span(cls := "nf-ingredients-label", "Ingredients: "),
+        data.ingredients
+      ),
       p(cls := "nf-small-print", data.smallPrint)
     )
 

@@ -39,7 +39,8 @@ The project is built using the **Mill** build tool and consists of three modules
     4. **Polling:** Each `job_id` is polled independently every 10s.
     5. **History Integration:** Background jobs are immediately added to History with a "Processing" status.
     6. **Completion:** Upon success, History items are updated with extracted data; for the primary item, the main UI also updates to show the result.
-    7. **Timeout:** Individual jobs stop polling after 5 mins and show "Failed" in History.
+    7. **Ingredients Display:** An ingredients list is rendered below the nutritional breakdown. If the `ingredients` array is missing or empty in the source JSON, it displays "unknown".
+    8. **Timeout:** Individual jobs stop polling after 5 mins and show "Failed" in History.
 
 ## 3. API Contract (`/api`)
 

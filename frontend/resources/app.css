@@ -192,6 +192,19 @@ body {
   color: #374151;
 }
 
+.nf-ingredients {
+  margin-top: 0.75rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  border-top: 1px solid #111;
+  padding-top: 0.4rem;
+}
+
+.nf-ingredients-label {
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .nf-section-title {
   font-weight: 700;
   margin-top: 0.75rem;
