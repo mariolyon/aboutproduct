@@ -560,7 +560,7 @@ object Components:
 
   def renderImagePreview(urlOpt: Option[String], fileOpt: Option[dom.File], s: String): HtmlElement =
     div(
-      cls := "flex-1 min-w-[380px] lg:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto lg:mx-0",
+      cls := "flex-1 min-w-[380px] md:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto md:mx-0",
       Option.when(s.nonEmpty)(h2(cls := "status-text", s)).getOrElse(emptyNode),
       fileOpt.map(file => div(cls := "image-filename mb-3 text-sm text-gray-500 break-all font-medium text-left w-full", file.name)).getOrElse(emptyNode),
       urlOpt.map(url => img(cls := "image-preview w-full max-h-[70vh] block border border-gray-300 rounded-lg object-contain bg-white p-1 shadow-md", src := url, alt := "Selected image preview")).getOrElse(emptyNode)
@@ -568,7 +568,7 @@ object Components:
 
   def renderResultCard(result: js.Dynamic, headerTitle: String, onClear: Option[() => Unit] = None): HtmlElement =
     div(
-      cls := "flex-1 min-w-[380px] lg:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto lg:mx-0",
+      cls := "flex-1 min-w-[380px] md:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto md:mx-0",
       tabIndex := -1,
       onMountCallback { ctx =>
         val node = ctx.thisNode.ref.asInstanceOf[js.Dynamic]
@@ -801,12 +801,12 @@ object Components:
       }
     },
     div(
-      cls := "flex flex-col lg:flex-row flex-wrap justify-center items-start gap-8 my-6 w-full",
+      cls := "flex flex-col md:flex-row flex-wrap justify-center items-start gap-8 my-6 w-full",
       child <-- extractionResult.signal.combineWith(comparisonResult.signal, imagePreviewUrl.signal, selectedImage.signal, status.signal).map {
         case (Some(res1), Some(res2), _, _, _) =>
           // COMPARISON MODE: Hide image, show two side-by-side cards
           div(
-            cls := "w-full flex flex-col lg:flex-row gap-8 justify-center items-start",
+            cls := "w-full flex flex-col md:flex-row gap-8 justify-center items-start",
             renderResultCard(res1, "Current Item"),
             renderResultCard(res2, "Comparing With", onClear = Some(() => {
               comparisonResult.set(None)
@@ -817,7 +817,7 @@ object Components:
         case (Some(res), None, maybeUrl, maybeFile, s) =>
           // STANDARD MODE: Show Image + Current Result
           div(
-            cls := "w-full flex flex-col lg:flex-row gap-8 justify-center items-start",
+            cls := "w-full flex flex-col md:flex-row gap-8 justify-center items-start",
             renderImagePreview(maybeUrl, maybeFile, s),
             renderResultCard(res, "Result")
           )

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mill *)",
+      "Bash(./run.sh *)"
+    ]
+  }
+}

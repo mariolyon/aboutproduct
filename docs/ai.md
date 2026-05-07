@@ -90,3 +90,8 @@ The project is built using the **Mill** build tool and consists of three modules
     - "View" is disabled if not completed or already in primary slot (unless in comparison mode).
     - "Compare" is disabled if not completed, no item is currently viewed, or item is already in a slot.
     - Clicking "View" during comparison clears the comparison state.
+
+### 7. Layout & Responsiveness
+- **Breakpoints:** Uses Tailwind CSS breakpoints via CDN.
+- **Side-by-Side View:** The image preview (or first comparison card) and the nutrition facts result card transition from a vertical stack (`flex-col`) to a side-by-side layout (`flex-row`) at the **medium (`md:`) breakpoint (768px)**.
+- **Comparison Mode:** In comparison mode, the image is hidden, and two nutrition facts cards are shown side-by-side from the `md` breakpoint upwards.
