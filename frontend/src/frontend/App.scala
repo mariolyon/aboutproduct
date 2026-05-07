@@ -35,9 +35,20 @@ object JsonUtils:
     dynamicField(obj, field).map(stringify).getOrElse("n/a")
 
   def quantityWithUnit(obj: js.Dynamic): String =
-    val quantity = stringField(obj, "quantity")
+    val rawQuantity = stringField(obj, "quantity")
     val unit = dynamicField(obj, "quantity_unit").map(stringify).getOrElse("")
-    if unit.nonEmpty && unit != "n/a" then s"$quantity $unit" else quantity
+
+    if unit.toLowerCase == "oz" then
+      rawQuantity.toDoubleOption match
+        case Some(q) =>
+          val grams = q * 28.3495
+          val rounded = Math.round(grams * 100.0) / 100.0
+          if rounded == rounded.toInt then s"${rounded.toInt} g" else s"$rounded g"
+        case None => s"$rawQuantity $unit"
+    else if unit.nonEmpty && unit != "n/a" then
+      s"$rawQuantity $unit"
+    else
+      rawQuantity
 
   def findNutritionFacts(result: js.Dynamic): Option[js.Dynamic] =
     dynamicField(result, "nutrition_facts_label").orElse {
