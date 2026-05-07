@@ -34,21 +34,56 @@ object JsonUtils:
   def stringField(obj: js.Dynamic, field: String): String =
     dynamicField(obj, field).map(stringify).getOrElse("n/a")
 
-  def quantityWithUnit(obj: js.Dynamic): String =
-    val rawQuantity = stringField(obj, "quantity")
-    val unit = dynamicField(obj, "quantity_unit").map(stringify).getOrElse("")
-
-    if unit.toLowerCase == "oz" then
-      rawQuantity.toDoubleOption match
+  def formatValueWithUnit(value: String, unit: String): String =
+    if value == "n/a" || value.isEmpty then "n/a"
+    else if unit.toLowerCase == "oz" then
+      value.toDoubleOption match
         case Some(q) =>
           val grams = q * 28.3495
           val rounded = Math.round(grams * 100.0) / 100.0
           if rounded == rounded.toInt then s"${rounded.toInt} g" else s"$rounded g"
-        case None => s"$rawQuantity $unit"
+        case None => s"$value $unit"
     else if unit.nonEmpty && unit != "n/a" then
-      s"$rawQuantity $unit"
+      s"$value $unit"
     else
-      rawQuantity
+      value
+
+  def extractServingWeight(nutrition: js.Dynamic): Option[Double] =
+    asArray(dynamicField(nutrition, "serving_size")).flatMap { obj =>
+      val q = stringField(obj, "quantity").toDoubleOption
+      val u = stringField(obj, "quantity_unit").toLowerCase
+      q.map { value =>
+        if u == "oz" then value * 28.3495
+        else if u == "g" || u == "ml" then value
+        else 0.0
+      }
+    }.find(_ > 0)
+
+  def quantityWithUnit(obj: js.Dynamic): String =
+    val rawQuantity = stringField(obj, "quantity")
+    val unit = dynamicField(obj, "quantity_unit").map(stringify).getOrElse("")
+    formatValueWithUnit(rawQuantity, unit)
+
+  def quantityAndPer100WithUnit(obj: js.Dynamic, servingWeightG: Option[Double] = None): NutriValue =
+    val rawQuantity = stringField(obj, "quantity")
+    val rawPer100 = stringField(obj, "quantity_per_100")
+    val unit = dynamicField(obj, "quantity_unit").map(stringify).getOrElse("")
+
+    val servingFormatted = formatValueWithUnit(rawQuantity, unit)
+
+    val per100Formatted =
+      if rawPer100 != "n/a" && rawPer100.nonEmpty then
+        formatValueWithUnit(rawPer100, unit)
+      else
+        servingWeightG.flatMap { weight =>
+          rawQuantity.toDoubleOption.map { q =>
+            val calculated = (q / weight) * 100.0
+            val rounded = Math.round(calculated * 100.0) / 100.0
+            formatValueWithUnit(rounded.toString, unit)
+          }
+        }.getOrElse("n/a")
+
+    NutriValue(servingFormatted, per100Formatted)
 
   def findNutritionFacts(result: js.Dynamic): Option[js.Dynamic] =
     dynamicField(result, "nutrition_facts_label").orElse {
@@ -62,22 +97,23 @@ object JsonUtils:
   def hasCompletedResult(result: js.Dynamic): Boolean =
     findNutritionFacts(result).nonEmpty
 
-  case class Nutrient(name: String, quantity: String, percentage: String)
+  case class NutriValue(serving: String, per100: String)
+  case class Nutrient(name: String, quantity: NutriValue, percentage: String)
   case class NutritionFactsData(
     title: String,
     servingsPerContainer: String,
     servingSize: String,
-    calories: String,
-    totalFat: String,
-    saturatedFat: String,
-    transFat: String,
-    cholesterol: String,
-    sodium: String,
-    totalCarbs: String,
-    dietaryFiber: String,
-    totalSugars: String,
-    addedSugars: String,
-    protein: String,
+    calories: NutriValue,
+    totalFat: NutriValue,
+    saturatedFat: NutriValue,
+    transFat: NutriValue,
+    cholesterol: NutriValue,
+    sodium: NutriValue,
+    totalCarbs: NutriValue,
+    dietaryFiber: NutriValue,
+    totalSugars: NutriValue,
+    addedSugars: NutriValue,
+    protein: NutriValue,
     nutrients: Seq[Nutrient],
     ingredients: String,
     smallPrint: String
@@ -85,13 +121,14 @@ object JsonUtils:
 
   def extractNutritionFacts(result: js.Dynamic): NutritionFactsData =
     val nutrition = findNutritionFacts(result).getOrElse(result)
+    val servingWeightG = extractServingWeight(nutrition)
     val servingSizeParts = asArray(dynamicField(nutrition, "serving_size")).map(quantityWithUnit).mkString(" / ")
     val carbs = dynamicField(nutrition, "carbs")
     val sugars = carbs.flatMap(c => dynamicField(c, "sugars"))
     val nutrients = asArray(dynamicField(nutrition, "nutrients")).map { n =>
       Nutrient(
         stringField(n, "name"),
-        quantityWithUnit(n),
+        quantityAndPer100WithUnit(n, servingWeightG),
         stringField(n, "percentage_daily_value")
       )
     }
@@ -100,21 +137,35 @@ object JsonUtils:
       dynamicField(result, "result").flatMap(res => dynamicField(res, "ingredients"))
     }).map(stringify).filter(_.nonEmpty)
 
+    val rawCalories = stringField(nutrition, "calories")
+    val rawCaloriesPer100 = stringField(nutrition, "calories_per_100")
+    val caloriesPer100Formatted =
+      if rawCaloriesPer100 != "n/a" && rawCaloriesPer100.nonEmpty then
+        rawCaloriesPer100
+      else
+        servingWeightG.flatMap { weight =>
+          rawCalories.toDoubleOption.map { cal =>
+            val calculated = (cal / weight) * 100.0
+            val rounded = Math.round(calculated * 10.0) / 10.0
+            if rounded == rounded.toInt then rounded.toInt.toString else rounded.toString
+          }
+        }.getOrElse("n/a")
+
     NutritionFactsData(
       title = stringField(nutrition, "title"),
       servingsPerContainer = stringField(nutrition, "servings_per_container"),
       servingSize = if servingSizeParts.nonEmpty then servingSizeParts else "n/a",
-      calories = stringField(nutrition, "calories"),
-      totalFat = dynamicField(nutrition, "total_fat").map(quantityWithUnit).getOrElse("n/a"),
-      saturatedFat = dynamicField(nutrition, "saturated_fat").map(quantityWithUnit).getOrElse("n/a"),
-      transFat = dynamicField(nutrition, "trans_fat").map(quantityWithUnit).getOrElse("n/a"),
-      cholesterol = dynamicField(nutrition, "cholesterol").map(quantityWithUnit).getOrElse("n/a"),
-      sodium = dynamicField(nutrition, "sodium").map(quantityWithUnit).getOrElse("n/a"),
-      totalCarbs = dynamicField(carbs.getOrElse(js.Dynamic.literal()), "total").map(quantityWithUnit).getOrElse("n/a"),
-      dietaryFiber = dynamicField(carbs.getOrElse(js.Dynamic.literal()), "fiber").map(quantityWithUnit).getOrElse("n/a"),
-      totalSugars = dynamicField(sugars.getOrElse(js.Dynamic.literal()), "total").map(quantityWithUnit).getOrElse("n/a"),
-      addedSugars = dynamicField(sugars.getOrElse(js.Dynamic.literal()), "added").map(quantityWithUnit).getOrElse("n/a"),
-      protein = dynamicField(nutrition, "protein").map(quantityWithUnit).getOrElse("n/a"),
+      calories = NutriValue(rawCalories, caloriesPer100Formatted),
+      totalFat = dynamicField(nutrition, "total_fat").map(quantityAndPer100WithUnit(_, servingWeightG)).getOrElse(NutriValue("n/a", "n/a")),
+      saturatedFat = dynamicField(nutrition, "saturated_fat").map(quantityAndPer100WithUnit(_, servingWeightG)).getOrElse(NutriValue("n/a", "n/a")),
+      transFat = dynamicField(nutrition, "trans_fat").map(quantityAndPer100WithUnit(_, servingWeightG)).getOrElse(NutriValue("n/a", "n/a")),
+      cholesterol = dynamicField(nutrition, "cholesterol").map(quantityAndPer100WithUnit(_, servingWeightG)).getOrElse(NutriValue("n/a", "n/a")),
+      sodium = dynamicField(nutrition, "sodium").map(quantityAndPer100WithUnit(_, servingWeightG)).getOrElse(NutriValue("n/a", "n/a")),
+      totalCarbs = dynamicField(carbs.getOrElse(js.Dynamic.literal()), "total").map(quantityAndPer100WithUnit(_, servingWeightG)).getOrElse(NutriValue("n/a", "n/a")),
+      dietaryFiber = dynamicField(carbs.getOrElse(js.Dynamic.literal()), "fiber").map(quantityAndPer100WithUnit(_, servingWeightG)).getOrElse(NutriValue("n/a", "n/a")),
+      totalSugars = dynamicField(sugars.getOrElse(js.Dynamic.literal()), "total").map(quantityAndPer100WithUnit(_, servingWeightG)).getOrElse(NutriValue("n/a", "n/a")),
+      addedSugars = dynamicField(sugars.getOrElse(js.Dynamic.literal()), "added").map(quantityAndPer100WithUnit(_, servingWeightG)).getOrElse(NutriValue("n/a", "n/a")),
+      protein = dynamicField(nutrition, "protein").map(quantityAndPer100WithUnit(_, servingWeightG)).getOrElse(NutriValue("n/a", "n/a")),
       nutrients = nutrients,
       ingredients = if ingredientsList.nonEmpty then ingredientsList.mkString(", ") else "unknown",
       smallPrint = stringField(nutrition, "small_print")
@@ -272,12 +323,22 @@ object Components:
       span(cls := "nf-value", valueText)
     )
 
-  def compRow(labelText: String, value1: String, value2: String, rowClass: String = ""): HtmlElement =
+  def compRow(labelText: String, v1: NutriValue, v2: NutriValue, rowClass: String = ""): HtmlElement =
     div(
-      className := s"nf-row no-gap $rowClass grid grid-cols-4".trim,
+      className := s"nf-row no-gap $rowClass grid grid-cols-6".trim,
       span(cls := "nf-label col-span-2", labelText),
-      span(cls := "nf-value col-span-1 text-center border-l border-gray-200", value1),
-      span(cls := "nf-value col-span-1 text-center border-l border-gray-200", value2)
+      span(cls := "nf-value col-span-1 text-center border-l border-gray-200", v1.serving),
+      span(cls := "nf-value col-span-1 text-center border-l border-gray-200 text-gray-500", if v1.per100 != "n/a" && v1.per100.nonEmpty then v1.per100 else "-"),
+      span(cls := "nf-value col-span-1 text-center border-l border-gray-200 border-l-2", v2.serving),
+      span(cls := "nf-value col-span-1 text-center border-l border-gray-200 text-gray-500", if v2.per100 != "n/a" && v2.per100.nonEmpty then v2.per100 else "-")
+    )
+
+  def compRowStr(labelText: String, value1: String, value2: String, rowClass: String = ""): HtmlElement =
+    div(
+      className := s"nf-row no-gap $rowClass grid grid-cols-6".trim,
+      span(cls := "nf-label col-span-2", labelText),
+      span(cls := "nf-value col-span-2 text-center border-l border-gray-200", value1),
+      span(cls := "nf-value col-span-2 text-center border-l border-gray-200 border-l-2", value2)
     )
 
   def renderComparisonNutritionFacts(result1: js.Dynamic, result2: js.Dynamic): HtmlElement =
@@ -291,30 +352,40 @@ object Components:
         "Comparison"
       ),
       div(
-        cls := "grid grid-cols-4 no-gap border-b-2 border-black pb-1 mb-1 font-bold",
+        cls := "grid grid-cols-6 no-gap border-b-2 border-black pb-1 mb-1 font-bold",
         span(cls := "col-span-2"),
-        span(cls := "col-span-1 text-center border-l border-gray-200", data1.title),
-        span(cls := "col-span-1 text-center border-l border-gray-200", data2.title)
+        span(cls := "col-span-2 text-center border-l border-gray-200", data1.title),
+        span(cls := "col-span-2 text-center border-l border-gray-200 border-l-2", data2.title)
+      ),
+      div(
+        cls := "grid grid-cols-6 no-gap border-b border-black pb-1 mb-1 text-xs font-semibold",
+        span(cls := "col-span-2"),
+        span(cls := "col-span-1 text-center border-l border-gray-200", "Actual"),
+        span(cls := "col-span-1 text-center border-l border-gray-200 text-gray-500", "/100g"),
+        span(cls := "col-span-1 text-center border-l border-gray-200 border-l-2", "Actual"),
+        span(cls := "col-span-1 text-center border-l border-gray-200 text-gray-500", "/100g")
       ),
       div(cls := "nf-subtitle", "Side-by-side view"),
-      compRow("Serving size", data1.servingSize, data2.servingSize, "serving-size"),
+      compRowStr("Serving size", data1.servingSize, data2.servingSize, "serving-size"),
       div(cls := "nf-thick-divider"),
       div(
         cls := "nf-amount",
-        "Amount per serving"
+        "Amount per serving and per 100g"
       ),
       div(
-        cls := "nf-calories-row grid grid-cols-4 no-gap",
+        cls := "nf-calories-row grid grid-cols-6 no-gap items-baseline",
         span(cls := "nf-calories-label col-span-2", "Calories"),
-        span(cls := "nf-calories-value col-span-1 text-center text-4xl border-l border-gray-200", data1.calories),
-        span(cls := "nf-calories-value col-span-1 text-center text-4xl border-l border-gray-200", data2.calories)
+        span(cls := "nf-calories-value col-span-1 text-center text-3xl border-l border-gray-200", data1.calories.serving),
+        span(cls := "nf-calories-value col-span-1 text-center text-xl border-l border-gray-200 text-gray-500", if data1.calories.per100 != "n/a" then data1.calories.per100 else "-"),
+        span(cls := "nf-calories-value col-span-1 text-center text-3xl border-l border-gray-200 border-l-2", data2.calories.serving),
+        span(cls := "nf-calories-value col-span-1 text-center text-xl border-l border-gray-200 text-gray-500", if data2.calories.per100 != "n/a" then data2.calories.per100 else "-")
       ),
       div(cls := "nf-thick-divider"),
       div(
-        cls := "nf-dv-header grid grid-cols-4 no-gap",
+        cls := "nf-dv-header grid grid-cols-6 no-gap",
         span(cls := "col-span-2"),
-        span(cls := "col-span-1 text-right text-xs border-l border-gray-200", "% Daily Value* (1)"),
-        span(cls := "col-span-1 text-right text-xs border-l border-gray-200", "% Daily Value* (2)")
+        span(cls := "col-span-2 text-right text-xs border-l border-gray-200", "% Daily Value* (1)"),
+        span(cls := "col-span-2 text-right text-xs border-l border-gray-200 border-l-2", "% Daily Value* (2)")
       ),
       compRow("Total Fat", data1.totalFat, data2.totalFat, "major"),
       compRow("Saturated Fat", data1.saturatedFat, data2.saturatedFat, "indent"),
@@ -418,29 +489,29 @@ object Components:
       div(
         cls := "nf-calories-row",
         span(cls := "nf-calories-label", "Calories"),
-        span(cls := "nf-calories-value", data.calories)
+        span(cls := "nf-calories-value", data.calories.serving)
       ),
       div(cls := "nf-thick-divider"),
       div(
         cls := "nf-dv-header",
         "% Daily Value*"
       ),
-      row("Total Fat", data.totalFat, "major"),
-      row("Saturated Fat", data.saturatedFat, "indent"),
-      row("Trans Fat", data.transFat, "indent"),
-      row("Cholesterol", data.cholesterol, "major"),
-      row("Sodium", data.sodium, "major"),
-      row("Total Carbohydrate", data.totalCarbs, "major"),
-      row("Dietary Fiber", data.dietaryFiber, "indent"),
-      row("Total Sugars", data.totalSugars, "indent"),
-      row("Includes Added Sugars", data.addedSugars, "indent-2"),
-      row("Protein", data.protein, "major"),
+      row("Total Fat", data.totalFat.serving, "major"),
+      row("Saturated Fat", data.saturatedFat.serving, "indent"),
+      row("Trans Fat", data.transFat.serving, "indent"),
+      row("Cholesterol", data.cholesterol.serving, "major"),
+      row("Sodium", data.sodium.serving, "major"),
+      row("Total Carbohydrate", data.totalCarbs.serving, "major"),
+      row("Dietary Fiber", data.dietaryFiber.serving, "indent"),
+      row("Total Sugars", data.totalSugars.serving, "indent"),
+      row("Includes Added Sugars", data.addedSugars.serving, "indent-2"),
+      row("Protein", data.protein.serving, "major"),
       div(cls := "nf-thick-divider"),
       if data.nutrients.nonEmpty then
         data.nutrients.map(nutrient =>
           row(
             nutrient.name,
-            s"${nutrient.quantity} (${nutrient.percentage}% DV)"
+            s"${nutrient.quantity.serving} (${nutrient.percentage}% DV)"
           )
         )
       else

@@ -126,15 +126,82 @@ class JsonUtilsTest extends FunSuite {
 
     val res = extractNutritionFacts(input)
     assert(res.title == "Milk")
-    assert(res.calories == "150")
+    assert(res.calories.serving == "150")
     assert(res.servingSize == "1 cup")
-    assert(res.totalFat == "8 g")
-    assert(res.totalCarbs == "12 g")
-    assert(res.totalSugars == "12 g")
+    assert(res.totalFat.serving == "8 g")
+    assert(res.totalCarbs.serving == "12 g")
+    assert(res.totalSugars.serving == "12 g")
     assert(res.ingredients == "Milk, Vitamin D3")
     assert(res.nutrients.length == 1)
     assert(res.nutrients.head.name == "Calcium")
+    assert(res.nutrients.head.quantity.serving == "300 mg")
     assert(res.nutrients.head.percentage == "25")
+  }
+
+  test("extractNutritionFacts extracts per100 fields correctly") {
+    val input = js.Dynamic.literal(
+      nutrition_facts_label = js.Dynamic.literal(
+        title = "Milk",
+        calories = "150",
+        calories_per_100 = "60",
+        total_fat = js.Dynamic.literal(
+          quantity = "8",
+          quantity_per_100 = "3.2",
+          quantity_unit = "g"
+        )
+      )
+    )
+
+    val res = extractNutritionFacts(input)
+    assert(res.calories.serving == "150")
+    assert(res.calories.per100 == "60")
+    assert(res.totalFat.serving == "8 g")
+    assert(res.totalFat.per100 == "3.2 g")
+  }
+
+  test("extractNutritionFacts calculates missing per100 fields relative to serving weight") {
+    val input = js.Dynamic.literal(
+      nutrition_facts_label = js.Dynamic.literal(
+        title = "Juice",
+        calories = "50",
+        serving_size = js.Array(js.Dynamic.literal(quantity = "200", quantity_unit = "ml")),
+        total_fat = js.Dynamic.literal(
+          quantity = "0.5",
+          quantity_unit = "g"
+        )
+      )
+    )
+
+    val res = extractNutritionFacts(input)
+    // calories per 100ml: (50 / 200) * 100 = 25
+    assert(res.calories.serving == "50")
+    assert(res.calories.per100 == "25")
+    // fat per 100ml: (0.5 / 200) * 100 = 0.25
+    assert(res.totalFat.serving == "0.5 g")
+    assert(res.totalFat.per100 == "0.25 g")
+  }
+
+  test("extractNutritionFacts calculates missing per100 fields for oz serving size") {
+    val input = js.Dynamic.literal(
+      nutrition_facts_label = js.Dynamic.literal(
+        title = "Snack",
+        calories = "100",
+        serving_size = js.Array(js.Dynamic.literal(quantity = "1", quantity_unit = "oz")),
+        total_fat = js.Dynamic.literal(
+          quantity = "5",
+          quantity_unit = "g"
+        )
+      )
+    )
+
+    val res = extractNutritionFacts(input)
+    // 1 oz approx 28.35g
+    // calories per 100g: (100 / 28.3495) * 100 approx 352.7
+    assert(res.calories.serving == "100")
+    assert(res.calories.per100 == "352.7")
+    // fat per 100g: (5 / 28.3495) * 100 approx 17.64
+    assert(res.totalFat.serving == "5 g")
+    assert(res.totalFat.per100 == "17.64 g")
   }
 
   test("extractNutritionFacts handles missing ingredients") {

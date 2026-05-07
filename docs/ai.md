@@ -47,7 +47,7 @@ The project is built using the **Mill** build tool and consists of three modules
     7. **Ingredients Display:** An ingredients list is rendered below the nutritional breakdown. If the `ingredients` array is missing or empty in the source JSON, it displays "unknown".
     8. **Title Renaming:** Users can rename the product title by clicking on it in the result card. The updated title is persisted to IndexedDB and reflected in the History drawer and the JSON export.
     9. **Timeout:** Individual jobs stop polling after 5 mins and show "Failed" in History.
-    10. **Comparison View:** When two products are compared, a unified comparison component is rendered, showing row headings once and product values in side-by-side columns for direct comparison.
+    10. **Comparison View:** When two products are compared, a unified comparison component is rendered, showing row headings once and product values in side-by-side columns for direct comparison. It prioritizes `quantity_per_100` values (if available in the source JSON) to ensure a fair comparison regardless of differing serving sizes.
     11. **JSON Viewing:** A "View JSON" button allows users to inspect the extracted data in a modal before copying it to the clipboard.
 
 ## 3. API Contract (`/api`)
@@ -109,4 +109,4 @@ The project is built using the **Mill** build tool and consists of three modules
 ### 7. Layout & Responsiveness
 - **Breakpoints:** Uses Tailwind CSS breakpoints via CDN.
 - **Side-by-Side View:** The image preview (or first comparison card) and the nutrition facts result card transition from a vertical stack (`flex-col`) to a side-by-side layout (`flex-row`) at the **medium (`md:`) breakpoint (768px)**.
-- **Comparison Mode:** In comparison mode, the image is hidden, and a single unified comparison nutrition facts card is shown with values from both products side-by-side. The columns are aligned in a rigid 4-column CSS Grid (2 cols for labels, 1 col per product) with vertical borders across all rows (titles, calories, nutrients).
+- **Comparison Mode:** In comparison mode, the image is hidden, and a single unified comparison nutrition facts card is shown with values from both products side-by-side. The columns are aligned in a rigid 6-column CSS Grid (2 cols for labels, 2 cols per product: "Actual" and "/100g") with vertical borders across all rows (titles, calories, nutrients).
