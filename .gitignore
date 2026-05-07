@@ -19,3 +19,4 @@ target/
 
 k8s/secret.yaml
 docs/.env
+test-results

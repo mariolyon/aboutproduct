@@ -1,0 +1,12 @@
+{
+  "name": "aboutproduct-ui-tests",
+  "version": "1.0.0",
+  "description": "UI E2E tests for AboutProduct using Playwright",
+  "main": "index.js",
+  "scripts": {
+    "test:ui": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

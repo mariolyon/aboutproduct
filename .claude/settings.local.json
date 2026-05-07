@@ -3,7 +3,8 @@
     "allow": [
       "Bash(mill *)",
       "Bash(./run.sh *)",
-      "Bash(kill *)"
+      "Bash(kill *)",
+      "Bash(npm run *)"
     ]
   }
 }

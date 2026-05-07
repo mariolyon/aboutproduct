@@ -80,6 +80,8 @@ The project is built using the **Mill** build tool and consists of three modules
   - Backend: `mill backend.test`
   - Frontend: `mill frontend.test`
   - Single test: `mill backend.test backend.test.MyTestSpec`
+  - E2E test: `mill backend.test.testOnly backend.E2ETest`
+  - UI E2E test: `npm run test:ui` (requires Playwright)
 - **Clean build:** `mill clean`
 - **Link Scala.js:** `mill frontend.fastLinkJS`
 
