@@ -261,12 +261,70 @@ object Components:
       span(cls := "nf-value", valueText)
     )
 
-  def renderNutritionFacts(result: js.Dynamic): HtmlElement =
+  def renderNutritionFacts(result: js.Dynamic, onTitleUpdate: Option[String => Unit] = None): HtmlElement =
     val data = extractNutritionFacts(result)
+    val isEditing = Var(false)
+    val editTitle = Var(data.title)
 
     div(
       cls := "nutrition-card",
-      h2(data.title),
+      child <-- isEditing.signal.map {
+        case false =>
+          h2(
+            cls := "cursor-pointer hover:text-blue-600 transition-colors flex items-center justify-center gap-2 mb-2",
+            title := "Click to edit title",
+            onClick --> { _ =>
+              editTitle.set(data.title)
+              isEditing.set(true)
+            },
+            span(data.title),
+            svg.svg(
+              svg.cls := "w-4 h-4 text-gray-400 inline-block",
+              svg.fill := "none",
+              svg.stroke := "currentColor",
+              svg.strokeWidth := "2",
+              svg.viewBox := "0 0 24 24",
+              svg.path(svg.d := "M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z")
+            )
+          )
+        case true =>
+          div(
+            cls := "flex items-center gap-2 w-full mb-4",
+            input(
+              typ := "text",
+              cls := "border border-gray-300 rounded px-2 py-1 flex-1 text-xl font-bold focus:outline-none focus:border-blue-500",
+              value <-- editTitle,
+              onInput.mapToValue --> editTitle,
+              onKeyDown.filter(_.key == "Enter") --> { _ =>
+                val newTitle = editTitle.now().trim
+                if newTitle.nonEmpty && newTitle != data.title then
+                  onTitleUpdate.foreach(_(newTitle))
+                isEditing.set(false)
+              },
+              onKeyDown.filter(_.key == "Escape") --> { _ =>
+                isEditing.set(false)
+              },
+              onMountCallback { ctx =>
+                ctx.thisNode.ref.asInstanceOf[dom.HTMLInputElement].focus()
+              }
+            ),
+            button(
+              cls := "action-btn px-3 py-1 text-xs min-w-0 bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100",
+              "Save",
+              onClick --> { _ =>
+                val newTitle = editTitle.now().trim
+                if newTitle.nonEmpty && newTitle != data.title then
+                  onTitleUpdate.foreach(_(newTitle))
+                isEditing.set(false)
+              }
+            ),
+            button(
+              cls := "action-btn px-3 py-1 text-xs min-w-0 bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100",
+              "Cancel",
+              onClick --> { _ => isEditing.set(false) }
+            )
+          )
+      },
       div(cls := "nf-subtitle", s"${data.servingsPerContainer} servings per container"),
       row("Serving size", data.servingSize, "serving-size"),
       div(cls := "nf-thick-divider"),
@@ -335,6 +393,31 @@ object Components:
 
   import JsonUtils.*
   import Components.*
+
+  def updateTitle(jobId: String, resultVar: Var[Option[js.Dynamic]], newTitle: String): Unit =
+    resultVar.now().foreach { result =>
+      // Update parsed JSON in-place
+      val target = findNutritionFacts(result).getOrElse(result)
+      target.updateDynamic("title")(newTitle)
+
+      // Serialize and parse to force a new JS object reference.
+      // This ensures `resultVar.set` successfully emits the change.
+      val updatedDataStr = js.JSON.stringify(result)
+      val updatedResult = js.JSON.parse(updatedDataStr).asInstanceOf[js.Dynamic]
+
+      resultVar.set(Some(updatedResult))
+
+      // Update history state & IndexedDB
+      scanHistory.update { history =>
+        history.map { item =>
+          if item.id == jobId then
+            val updated = item.copy(title = newTitle, dataStr = updatedDataStr)
+            IndexedDBUtils.saveItem(updated)
+            updated
+          else item
+        }
+      }
+    }
 
   def pollJobStatus(jobId: String, isMain: Boolean): Unit =
     val pollDelayMs = 10000
@@ -566,7 +649,7 @@ object Components:
       urlOpt.map(url => img(cls := "image-preview w-full max-h-[70vh] block border border-gray-300 rounded-lg object-contain bg-white p-1 shadow-md", src := url, alt := "Selected image preview")).getOrElse(emptyNode)
     )
 
-  def renderResultCard(result: js.Dynamic, headerTitle: String, onClear: Option[() => Unit] = None): HtmlElement =
+  def renderResultCard(result: js.Dynamic, headerTitle: String, onClear: Option[() => Unit] = None, onTitleUpdate: Option[String => Unit] = None): HtmlElement =
     div(
       cls := "flex-1 min-w-[380px] md:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto md:mx-0",
       tabIndex := -1,
@@ -597,7 +680,7 @@ object Components:
           }.getOrElse(emptyNode)
         )
       ),
-      renderNutritionFacts(result)
+      renderNutritionFacts(result, onTitleUpdate)
     )
 
   val appElement = div(
@@ -802,27 +885,40 @@ object Components:
     },
     div(
       cls := "flex flex-col md:flex-row flex-wrap justify-center items-start gap-8 my-6 w-full",
-      child <-- extractionResult.signal.combineWith(comparisonResult.signal, imagePreviewUrl.signal, selectedImage.signal, status.signal).map {
-        case (Some(res1), Some(res2), _, _, _) =>
+      child <-- extractionResult.signal.combineWith(comparisonResult.signal, currentResultId.signal, comparisonResultId.signal, imagePreviewUrl.signal, selectedImage.signal, status.signal).map {
+        case (Some(res1), Some(res2), currIdOpt, compIdOpt, _, _, _) =>
           // COMPARISON MODE: Hide image, show two side-by-side cards
           div(
             cls := "w-full flex flex-col md:flex-row gap-8 justify-center items-start",
-            renderResultCard(res1, "Current Item"),
-            renderResultCard(res2, "Comparing With", onClear = Some(() => {
-              comparisonResult.set(None)
-              comparisonResultId.set(None)
-            }))
+            renderResultCard(
+              res1,
+              "Current Item",
+              onTitleUpdate = currIdOpt.map(id => (newTitle: String) => updateTitle(id, extractionResult, newTitle))
+            ),
+            renderResultCard(
+              res2,
+              "Comparing With",
+              onClear = Some(() => {
+                comparisonResult.set(None)
+                comparisonResultId.set(None)
+              }),
+              onTitleUpdate = compIdOpt.map(id => (newTitle: String) => updateTitle(id, comparisonResult, newTitle))
+            )
           )
 
-        case (Some(res), None, maybeUrl, maybeFile, s) =>
+        case (Some(res), None, currIdOpt, _, maybeUrl, maybeFile, s) =>
           // STANDARD MODE: Show Image + Current Result
           div(
             cls := "w-full flex flex-col md:flex-row gap-8 justify-center items-start",
             renderImagePreview(maybeUrl, maybeFile, s),
-            renderResultCard(res, "Result")
+            renderResultCard(
+              res,
+              "Result",
+              onTitleUpdate = currIdOpt.map(id => (newTitle: String) => updateTitle(id, extractionResult, newTitle))
+            )
           )
 
-        case (None, _, maybeUrl, maybeFile, s) =>
+        case (None, _, _, _, maybeUrl, maybeFile, s) =>
           // INITIAL MODE: Only show Image preview if exists
           maybeUrl.zip(maybeFile).map { case (url, file) =>
             renderImagePreview(Some(url), Some(file), s)

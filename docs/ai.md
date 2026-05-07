@@ -45,7 +45,8 @@ The project is built using the **Mill** build tool and consists of three modules
     5. **History Integration:** Background jobs are immediately added to History with a "Processing" status.
     6. **Completion:** Upon success, History items are updated with extracted data; for the primary item, the main UI also updates to show the result.
     7. **Ingredients Display:** An ingredients list is rendered below the nutritional breakdown. If the `ingredients` array is missing or empty in the source JSON, it displays "unknown".
-    8. **Timeout:** Individual jobs stop polling after 5 mins and show "Failed" in History.
+    8. **Title Renaming:** Users can rename the product title by clicking on it in the result card. The updated title is persisted to IndexedDB and reflected in the History drawer and the JSON export.
+    9. **Timeout:** Individual jobs stop polling after 5 mins and show "Failed" in History.
 
 ## 3. API Contract (`/api`)
 
@@ -95,6 +96,11 @@ The project is built using the **Mill** build tool and consists of three modules
     - "View" is disabled if not completed or already in primary slot (unless in comparison mode).
     - "Compare" is disabled if not completed, no item is currently viewed, or item is already in a slot.
     - Clicking "View" during comparison clears the comparison state.
+
+### Title Editing
+- **Interactive Renaming:** The product title in the nutrition facts card is clickable.
+- **Persistence:** Renaming a title updates the `HistoryItem` in IndexedDB and the `dataStr` JSON payload.
+- **Reactivity:** Updates to the title are immediately reflected across the UI, including the History drawer and comparison views.
 
 ### 7. Layout & Responsiveness
 - **Breakpoints:** Uses Tailwind CSS breakpoints via CDN.
