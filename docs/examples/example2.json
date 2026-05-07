@@ -1,75 +1,113 @@
 {
-  "nutrition_facts_label": {
-    "title": "H-VollMilk 3.5% Fat ",
-    "servings_per_container": 6,
-    "serving_size": [
-      {
-        "quantity": 30,
-        "quantity_unit": "g"
-      }
-    ],
-    "calories": 194,
-    "total_fat": {
-      "quantity": "16.4",
+  "title": "PRINGLES SEA SALT",
+  "servings_per_container": 6,
+  "serving_size": [
+    {
+      "quantity": 28,
+      "quantity_unit": "g"
+    }
+  ],
+  "calories": 150,
+  "calories_per_100": null,
+  "total_fat": {
+    "quantity": "9",
+    "quantity_unit": "g",
+    "quantity_per_100": null,
+    "percentage_daily_value": 12
+  },
+  "saturated_fat": {
+    "quantity": "2.5",
+    "quantity_unit": "g",
+    "quantity_per_100": null,
+    "percentage_daily_value": 13
+  },
+  "trans_fat": {
+    "quantity": 0,
+    "quantity_unit": "g",
+    "quantity_per_100": null,
+    "percentage_daily_value": null
+  },
+  "cholesterol": {
+    "quantity": "0",
+    "quantity_unit": "mg",
+    "quantity_per_100": null,
+    "percentage_daily_value": 0
+  },
+  "sodium": {
+    "quantity": "180",
+    "quantity_unit": "mg",
+    "quantity_per_100": null,
+    "percentage_daily_value": 8
+  },
+  "carbs": {
+    "total": {
+      "quantity": "17",
       "quantity_unit": "g",
-      "percentage_daily_value": 23
+      "quantity_per_100": null,
+      "percentage_daily_value": 6
     },
-    "saturated_fat": {
-      "quantity": "2.3",
+    "fiber": {
+      "quantity": "<1",
       "quantity_unit": "g",
-      "percentage_daily_value": 12
-    },
-    "trans_fat": {
-      "quantity": null,
-      "quantity_unit": null,
-      "percentage_daily_value": null
-    },
-    "cholesterol": {
-      "quantity": null,
-      "quantity_unit": null,
-      "percentage_daily_value": null
-    },
-    "sodium": {
-      "quantity": null,
-      "quantity_unit": null,
-      "percentage_daily_value": null
-    },
-    "carbs": {
-      "total": {
-        "quantity": "3.2",
-        "quantity_unit": "g",
-        "percentage_daily_value": 1
-      },
-      "fiber": {
-        "quantity": null,
-        "quantity_unit": null,
-        "percentage_daily_value": null
-      },
-      "sugars": {
-        "total": {
-          "quantity": "1.7",
-          "quantity_unit": "g",
-          "percentage_daily_value": 2
-        },
-        "added": {
-          "quantity": null,
-          "quantity_unit": null,
-          "percentage_daily_value": null
-        }
-      }
-    },
-    "protein": {
-      "quantity": "7.1",
-      "quantity_unit": "g",
-      "percentage_daily_value": 14
-    },
-    "salt": {
-      "quantity": "0.19",
-      "quantity_unit": "g",
+      "quantity_per_100": null,
       "percentage_daily_value": 3
     },
-    "nutrients": [],
-    "small_print": "RI (Reference Intake) = Reference intake for an average adult (8400 kJ/2000 kcal)"
+    "sugars": {
+      "total": {
+        "quantity": "2",
+        "quantity_unit": "g",
+        "quantity_per_100": null,
+        "percentage_daily_value": null
+      },
+      "added": {
+        "quantity": "1",
+        "quantity_unit": "g",
+        "quantity_per_100": null,
+        "percentage_daily_value": 2
+      }
+    }
   },
-  "ingredients": []
+  "protein": {
+    "quantity": "1",
+    "quantity_unit": "g",
+    "quantity_per_100": null,
+    "percentage_daily_value": null
+  },
+  "salt": {
+    "quantity": null,
+    "quantity_unit": null,
+    "quantity_per_100": null,
+    "percentage_daily_value": null
+  },
+  "nutrients": [
+    {
+      "name": "Vitamin D",
+      "quantity_unit": "mcg",
+      "quantity": "0",
+      "quantity_per_100": null,
+      "percentage_daily_value": 0
+    },
+    {
+      "name": "Calcium",
+      "quantity_unit": "mg",
+      "quantity": "0",
+      "quantity_per_100": null,
+      "percentage_daily_value": 0
+    },
+    {
+      "name": "Iron",
+      "quantity_unit": "mg",
+      "quantity": "0.2",
+      "quantity_per_100": null,
+      "percentage_daily_value": 1
+    },
+    {
+      "name": "Potassium",
+      "quantity_unit": "mg",
+      "quantity": "60",
+      "quantity_per_100": null,
+      "percentage_daily_value": 0
+    }
+  ],
+  "small_print": "*The % Daily Value (DV) tells you how much a nutrient in a serving of food contributes to a daily diet. 2,000 calories a day is used for general nutrition advice. E.S. Valor Diario (VD) es una medida de la cantidad de un nutriente en una porción de alimento que contribuye a una dieta diaria. 2,000 calorías al día se utiliza para asesoramiento de nutrición general."
 }
