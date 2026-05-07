@@ -48,6 +48,7 @@ The project is built using the **Mill** build tool and consists of three modules
     8. **Title Renaming:** Users can rename the product title by clicking on it in the result card. The updated title is persisted to IndexedDB and reflected in the History drawer and the JSON export.
     9. **Timeout:** Individual jobs stop polling after 5 mins and show "Failed" in History.
     10. **Comparison View:** When two products are compared, a unified comparison component is rendered, showing row headings once and product values in side-by-side columns for direct comparison.
+    11. **JSON Viewing:** A "View JSON" button allows users to inspect the extracted data in a modal before copying it to the clipboard.
 
 ## 3. API Contract (`/api`)
 

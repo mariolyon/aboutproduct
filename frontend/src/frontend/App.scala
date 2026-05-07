@@ -452,6 +452,8 @@ object Components:
   val currentResultId = Var(Option.empty[String])
   val scanHistory = Var(Seq.empty[HistoryItem])
   val showHistory = Var(false)
+  val showJsonModal = Var(false)
+  val modalJson = Var("")
 
   // Initialize History from IndexedDB
   IndexedDBUtils.migrateFromLocalStorage().flatMap(_ => IndexedDBUtils.loadHistory()).foreach { history =>
@@ -763,6 +765,15 @@ object Components:
           cls := "flex gap-2",
           button(
             cls := "action-btn px-3 py-1.5 min-w-0 flex-row text-xs",
+            "View JSON",
+            onClick --> { _ =>
+              val jsonString = js.JSON.stringify(findNutritionFacts(result).getOrElse(js.Dynamic.literal()), null.asInstanceOf[js.Array[js.Any]], 2)
+              modalJson.set(jsonString)
+              showJsonModal.set(true)
+            }
+          ),
+          button(
+            cls := "action-btn px-3 py-1.5 min-w-0 flex-row text-xs",
             "Copy JSON",
             onClick --> { _ =>
               val jsonString = js.JSON.stringify(findNutritionFacts(result).getOrElse(js.Dynamic.literal()), null.asInstanceOf[js.Array[js.Any]], 2)
@@ -1016,7 +1027,60 @@ object Components:
             renderImagePreview(Some(url), Some(file), s)
           }.getOrElse(emptyNode)
       }
-    )
+    ),
+    child.maybe <-- showJsonModal.signal.map { show =>
+      Option.when(show) {
+        div(
+          cls := "fixed inset-0 z-[60] flex items-center justify-center p-4",
+          // Backdrop
+          div(
+            cls := "fixed inset-0 bg-black bg-opacity-60",
+            onClick --> { _ => showJsonModal.set(false) }
+          ),
+          // Modal Content
+          div(
+            cls := "relative bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col z-[70]",
+            div(
+              cls := "flex justify-between items-center p-4 border-b border-gray-200",
+              h3(cls := "text-lg font-bold", "Nutrition Facts JSON"),
+              button(
+                cls := "text-gray-400 hover:text-gray-600 p-1",
+                onClick --> { _ => showJsonModal.set(false) },
+                svg.svg(
+                  svg.cls := "w-6 h-6",
+                  svg.fill := "none",
+                  svg.stroke := "currentColor",
+                  svg.viewBox := "0 0 24 24",
+                  svg.path(svg.strokeLineCap := "round", svg.strokeLineJoin := "round", svg.strokeWidth := "2", svg.d := "M6 18L18 6M6 6l12 12")
+                )
+              )
+            ),
+            div(
+              cls := "p-4 overflow-auto flex-1 text-left bg-gray-50",
+              pre(
+                cls := "text-xs font-mono text-gray-800 break-all whitespace-pre-wrap p-2",
+                child.text <-- modalJson.signal
+              )
+            ),
+            div(
+              cls := "p-4 border-t border-gray-200 flex justify-end gap-3",
+              button(
+                cls := "action-btn px-4 py-2 min-w-0 flex-row text-sm",
+                "Copy to Clipboard",
+                onClick --> { _ =>
+                  dom.window.navigator.clipboard.writeText(modalJson.now())
+                }
+              ),
+              button(
+                cls := "action-btn px-4 py-2 min-w-0 flex-row text-sm bg-gray-100 hover:bg-gray-200 border-gray-300",
+                "Close",
+                onClick --> { _ => showJsonModal.set(false) }
+              )
+            )
+          )
+        )
+      }
+    }
   )
 
   renderOnDomContentLoaded(
