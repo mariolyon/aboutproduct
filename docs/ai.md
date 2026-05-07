@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **System Instruction:** You are an expert AI software engineer assisting with the "AboutProduct" project. This document is your foundational context. Treat the instructions and architectural constraints below as strict invariants unless explicitly overridden by the user.
 
+After making changes:
+- validate that the tests pass. 
+- update the specs in @docs/ai.md, but do not change the instructions before "Project Overview".
+- ensure that the application is left running, by execution of run.sh, to allow for human to verify the changes.
+
 ## 1. Project Overview
 
 **AboutProduct** is a full-stack Scala web application that extracts information (like nutrition facts) from a photo of a product label. It proxies requests to the NuExtract API for data extraction, handles asynchronous job polling, and renders a visual nutrition facts label from the extracted JSON.
