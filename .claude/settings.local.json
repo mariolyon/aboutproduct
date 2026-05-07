@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(mill *)",
-      "Bash(./run.sh *)"
+      "Bash(./run.sh *)",
+      "Bash(kill *)"
     ]
   }
 }

@@ -261,6 +261,78 @@ object Components:
       span(cls := "nf-value", valueText)
     )
 
+  def compRow(labelText: String, value1: String, value2: String, rowClass: String = ""): HtmlElement =
+    div(
+      className := s"nf-row $rowClass flex".trim,
+      span(cls := s"nf-label flex-[2] ${if rowClass.contains("indent") then "pl-4" else ""}", labelText),
+      span(cls := "nf-value flex-1 text-center border-l border-gray-200", value1),
+      span(cls := "nf-value flex-1 text-center border-l border-gray-200", value2)
+    )
+
+  def renderComparisonNutritionFacts(result1: js.Dynamic, result2: js.Dynamic): HtmlElement =
+    val data1 = extractNutritionFacts(result1)
+    val data2 = extractNutritionFacts(result2)
+
+    div(
+      cls := "nutrition-card max-w-2xl",
+      h2(
+        cls := "mb-2 text-center",
+        "Comparison"
+      ),
+      div(
+        cls := "flex border-b-2 border-black pb-1 mb-1 font-bold",
+        span(cls := "flex-[2]"),
+        span(cls := "flex-1 text-center", data1.title),
+        span(cls := "flex-1 text-center", data2.title)
+      ),
+      div(cls := "nf-subtitle", "Side-by-side view"),
+      compRow("Serving size", data1.servingSize, data2.servingSize, "serving-size"),
+      div(cls := "nf-thick-divider"),
+      div(
+        cls := "nf-amount",
+        "Amount per serving"
+      ),
+      div(
+        cls := "nf-calories-row flex",
+        span(cls := "nf-calories-label flex-[2]", "Calories"),
+        span(cls := "nf-calories-value flex-1 text-center text-4xl", data1.calories),
+        span(cls := "nf-calories-value flex-1 text-center text-4xl", data2.calories)
+      ),
+      div(cls := "nf-thick-divider"),
+      div(
+        cls := "nf-dv-header flex",
+        span(cls := "flex-[2]"),
+        span(cls := "flex-1 text-right text-xs", "% Daily Value* (1)"),
+        span(cls := "flex-1 text-right text-xs", "% Daily Value* (2)")
+      ),
+      compRow("Total Fat", data1.totalFat, data2.totalFat, "major"),
+      compRow("Saturated Fat", data1.saturatedFat, data2.saturatedFat, "indent"),
+      compRow("Trans Fat", data1.transFat, data2.transFat, "indent"),
+      compRow("Cholesterol", data1.cholesterol, data2.cholesterol, "major"),
+      compRow("Sodium", data1.sodium, data2.sodium, "major"),
+      compRow("Total Carbohydrate", data1.totalCarbs, data2.totalCarbs, "major"),
+      compRow("Dietary Fiber", data1.dietaryFiber, data2.dietaryFiber, "indent"),
+      compRow("Total Sugars", data1.totalSugars, data2.totalSugars, "indent"),
+      compRow("Includes Added Sugars", data1.addedSugars, data2.addedSugars, "indent-2"),
+      compRow("Protein", data1.protein, data2.protein, "major"),
+      div(cls := "nf-thick-divider"),
+      // For nutrients, it's tricky if they don't match.
+      // Simplified: just show ingredients comparison if they differ significantly or just lists
+      div(
+        cls := "grid grid-cols-2 gap-4 mt-4 text-xs",
+        div(
+          span(cls := "nf-ingredients-label", "Ingredients (1): "),
+          data1.ingredients
+        ),
+        div(
+          span(cls := "nf-ingredients-label", "Ingredients (2): "),
+          data2.ingredients
+        )
+      ),
+      p(cls := "nf-small-print", s"1: ${data1.smallPrint}"),
+      p(cls := "nf-small-print", s"2: ${data2.smallPrint}")
+    )
+
   def renderNutritionFacts(result: js.Dynamic, onTitleUpdate: Option[String => Unit] = None): HtmlElement =
     val data = extractNutritionFacts(result)
     val isEditing = Var(false)
@@ -649,6 +721,32 @@ object Components:
       urlOpt.map(url => img(cls := "image-preview w-full max-h-[70vh] block border border-gray-300 rounded-lg object-contain bg-white p-1 shadow-md", src := url, alt := "Selected image preview")).getOrElse(emptyNode)
     )
 
+  def renderComparisonResultCard(result1: js.Dynamic, result2: js.Dynamic, onClear: Option[() => Unit] = None): HtmlElement =
+    div(
+      cls := "flex-1 w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto",
+      tabIndex := -1,
+      onMountCallback { ctx =>
+        val node = ctx.thisNode.ref.asInstanceOf[js.Dynamic]
+        node.scrollIntoView(js.Dynamic.literal(behavior = "smooth", block = "start"))
+        node.focus()
+      },
+      div(
+        cls := "flex justify-between items-center w-full mb-5",
+        h2(cls := "status-text mb-0", "Product Comparison"),
+        div(
+          cls := "flex gap-2",
+          onClear.map { cb =>
+            button(
+              cls := "action-btn px-3 py-1.5 min-w-0 flex-row text-xs bg-red-50 text-red-600 border-red-200 hover:bg-red-100",
+              "Exit Comparison",
+              onClick --> (_ => cb())
+            )
+          }.getOrElse(emptyNode)
+        )
+      ),
+      renderComparisonNutritionFacts(result1, result2)
+    )
+
   def renderResultCard(result: js.Dynamic, headerTitle: String, onClear: Option[() => Unit] = None, onTitleUpdate: Option[String => Unit] = None): HtmlElement =
     div(
       cls := "flex-1 min-w-[380px] md:max-w-[calc(50%-1rem)] w-full flex flex-col items-center p-6 border border-gray-200 rounded-xl bg-white shadow-sm mx-auto md:mx-0",
@@ -887,22 +985,16 @@ object Components:
       cls := "flex flex-col md:flex-row flex-wrap justify-center items-start gap-8 my-6 w-full",
       child <-- extractionResult.signal.combineWith(comparisonResult.signal, currentResultId.signal, comparisonResultId.signal, imagePreviewUrl.signal, selectedImage.signal, status.signal).map {
         case (Some(res1), Some(res2), currIdOpt, compIdOpt, _, _, _) =>
-          // COMPARISON MODE: Hide image, show two side-by-side cards
+          // COMPARISON MODE: Hide image, show a unified comparison card
           div(
-            cls := "w-full flex flex-col md:flex-row gap-8 justify-center items-start",
-            renderResultCard(
+            cls := "w-full flex justify-center items-start",
+            renderComparisonResultCard(
               res1,
-              "Current Item",
-              onTitleUpdate = currIdOpt.map(id => (newTitle: String) => updateTitle(id, extractionResult, newTitle))
-            ),
-            renderResultCard(
               res2,
-              "Comparing With",
               onClear = Some(() => {
                 comparisonResult.set(None)
                 comparisonResultId.set(None)
-              }),
-              onTitleUpdate = compIdOpt.map(id => (newTitle: String) => updateTitle(id, comparisonResult, newTitle))
+              })
             )
           )
 

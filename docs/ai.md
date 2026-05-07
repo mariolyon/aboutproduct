@@ -47,6 +47,7 @@ The project is built using the **Mill** build tool and consists of three modules
     7. **Ingredients Display:** An ingredients list is rendered below the nutritional breakdown. If the `ingredients` array is missing or empty in the source JSON, it displays "unknown".
     8. **Title Renaming:** Users can rename the product title by clicking on it in the result card. The updated title is persisted to IndexedDB and reflected in the History drawer and the JSON export.
     9. **Timeout:** Individual jobs stop polling after 5 mins and show "Failed" in History.
+    10. **Comparison View:** When two products are compared, a unified comparison component is rendered, showing row headings once and product values in side-by-side columns for direct comparison.
 
 ## 3. API Contract (`/api`)
 
@@ -105,4 +106,4 @@ The project is built using the **Mill** build tool and consists of three modules
 ### 7. Layout & Responsiveness
 - **Breakpoints:** Uses Tailwind CSS breakpoints via CDN.
 - **Side-by-Side View:** The image preview (or first comparison card) and the nutrition facts result card transition from a vertical stack (`flex-col`) to a side-by-side layout (`flex-row`) at the **medium (`md:`) breakpoint (768px)**.
-- **Comparison Mode:** In comparison mode, the image is hidden, and two nutrition facts cards are shown side-by-side from the `md` breakpoint upwards.
+- **Comparison Mode:** In comparison mode, the image is hidden, and a single unified comparison nutrition facts card is shown with values from both products side-by-side.
