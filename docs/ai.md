@@ -108,4 +108,4 @@ The project is built using the **Mill** build tool and consists of three modules
 ### 7. Layout & Responsiveness
 - **Breakpoints:** Uses Tailwind CSS breakpoints via CDN.
 - **Side-by-Side View:** The image preview (or first comparison card) and the nutrition facts result card transition from a vertical stack (`flex-col`) to a side-by-side layout (`flex-row`) at the **medium (`md:`) breakpoint (768px)**.
-- **Comparison Mode:** In comparison mode, the image is hidden, and a single unified comparison nutrition facts card is shown with values from both products side-by-side.
+- **Comparison Mode:** In comparison mode, the image is hidden, and a single unified comparison nutrition facts card is shown with values from both products side-by-side. The columns are aligned in a rigid 4-column CSS Grid (2 cols for labels, 1 col per product) with vertical borders across all rows (titles, calories, nutrients).

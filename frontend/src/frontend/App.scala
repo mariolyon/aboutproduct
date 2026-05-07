@@ -263,10 +263,10 @@ object Components:
 
   def compRow(labelText: String, value1: String, value2: String, rowClass: String = ""): HtmlElement =
     div(
-      className := s"nf-row $rowClass flex".trim,
-      span(cls := s"nf-label flex-[2] ${if rowClass.contains("indent") then "pl-4" else ""}", labelText),
-      span(cls := "nf-value flex-1 text-center border-l border-gray-200", value1),
-      span(cls := "nf-value flex-1 text-center border-l border-gray-200", value2)
+      className := s"nf-row no-gap $rowClass grid grid-cols-4".trim,
+      span(cls := "nf-label col-span-2", labelText),
+      span(cls := "nf-value col-span-1 text-center border-l border-gray-200", value1),
+      span(cls := "nf-value col-span-1 text-center border-l border-gray-200", value2)
     )
 
   def renderComparisonNutritionFacts(result1: js.Dynamic, result2: js.Dynamic): HtmlElement =
@@ -280,10 +280,10 @@ object Components:
         "Comparison"
       ),
       div(
-        cls := "flex border-b-2 border-black pb-1 mb-1 font-bold",
-        span(cls := "flex-[2]"),
-        span(cls := "flex-1 text-center", data1.title),
-        span(cls := "flex-1 text-center", data2.title)
+        cls := "grid grid-cols-4 no-gap border-b-2 border-black pb-1 mb-1 font-bold",
+        span(cls := "col-span-2"),
+        span(cls := "col-span-1 text-center border-l border-gray-200", data1.title),
+        span(cls := "col-span-1 text-center border-l border-gray-200", data2.title)
       ),
       div(cls := "nf-subtitle", "Side-by-side view"),
       compRow("Serving size", data1.servingSize, data2.servingSize, "serving-size"),
@@ -293,17 +293,17 @@ object Components:
         "Amount per serving"
       ),
       div(
-        cls := "nf-calories-row flex",
-        span(cls := "nf-calories-label flex-[2]", "Calories"),
-        span(cls := "nf-calories-value flex-1 text-center text-4xl", data1.calories),
-        span(cls := "nf-calories-value flex-1 text-center text-4xl", data2.calories)
+        cls := "nf-calories-row grid grid-cols-4 no-gap",
+        span(cls := "nf-calories-label col-span-2", "Calories"),
+        span(cls := "nf-calories-value col-span-1 text-center text-4xl border-l border-gray-200", data1.calories),
+        span(cls := "nf-calories-value col-span-1 text-center text-4xl border-l border-gray-200", data2.calories)
       ),
       div(cls := "nf-thick-divider"),
       div(
-        cls := "nf-dv-header flex",
-        span(cls := "flex-[2]"),
-        span(cls := "flex-1 text-right text-xs", "% Daily Value* (1)"),
-        span(cls := "flex-1 text-right text-xs", "% Daily Value* (2)")
+        cls := "nf-dv-header grid grid-cols-4 no-gap",
+        span(cls := "col-span-2"),
+        span(cls := "col-span-1 text-right text-xs border-l border-gray-200", "% Daily Value* (1)"),
+        span(cls := "col-span-1 text-right text-xs border-l border-gray-200", "% Daily Value* (2)")
       ),
       compRow("Total Fat", data1.totalFat, data2.totalFat, "major"),
       compRow("Saturated Fat", data1.saturatedFat, data2.saturatedFat, "indent"),

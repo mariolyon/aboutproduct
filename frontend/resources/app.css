@@ -125,6 +125,11 @@ body {
   font-size: 1.05rem;
 }
 
+.nf-row.no-gap,
+.no-gap {
+  gap: 0 !important;
+}
+
 .nf-label {
   font-weight: 600;
 }
@@ -134,11 +139,11 @@ body {
   font-weight: 800;
 }
 
-.nf-row.indent {
+.nf-row.indent .nf-label {
   padding-left: 1.8rem;
 }
 
-.nf-row.indent-2 {
+.nf-row.indent-2 .nf-label {
   padding-left: 3.2rem;
 }
 
