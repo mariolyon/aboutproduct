@@ -772,14 +772,6 @@ object Components:
               showJsonModal.set(true)
             }
           ),
-          button(
-            cls := "action-btn px-3 py-1.5 min-w-0 flex-row text-xs",
-            "Copy JSON",
-            onClick --> { _ =>
-              val jsonString = js.JSON.stringify(findNutritionFacts(result).getOrElse(js.Dynamic.literal()), null.asInstanceOf[js.Array[js.Any]], 2)
-              dom.window.navigator.clipboard.writeText(jsonString)
-            }
-          ),
           onClear.map { cb =>
             button(
               cls := "action-btn px-3 py-1.5 min-w-0 flex-row text-xs bg-red-50 text-red-600 border-red-200 hover:bg-red-100",

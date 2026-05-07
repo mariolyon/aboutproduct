@@ -4,7 +4,8 @@
       "Bash(mill *)",
       "Bash(./run.sh *)",
       "Bash(kill *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(pkill -f mill)"
     ]
   }
 }
