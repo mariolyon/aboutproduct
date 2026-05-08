@@ -100,6 +100,43 @@ class JsonUtilsTest extends FunSuite {
     assert(!hasCompletedResult(notCompleted))
   }
 
+  test("extractServingWeight calculates weight correctly") {
+    val oz = js.Dynamic.literal(serving_size = js.Array(js.Dynamic.literal(quantity = "1", quantity_unit = "oz")))
+    assert(extractServingWeight(oz).get == 28.3495)
+
+    val g = js.Dynamic.literal(serving_size = js.Array(js.Dynamic.literal(quantity = "100", quantity_unit = "g")))
+    assert(extractServingWeight(g).get == 100.0)
+
+    val ml = js.Dynamic.literal(serving_size = js.Array(js.Dynamic.literal(quantity = "250", quantity_unit = "ml")))
+    assert(extractServingWeight(ml).get == 250.0)
+
+    val unknown = js.Dynamic.literal(serving_size = js.Array(js.Dynamic.literal(quantity = "1", quantity_unit = "cup")))
+    assert(extractServingWeight(unknown).isEmpty)
+
+    val missing = js.Dynamic.literal()
+    assert(extractServingWeight(missing).isEmpty)
+  }
+
+  test("quantityAndPer100WithUnit calculates per 100 correctly") {
+    val obj = js.Dynamic.literal(quantity = "10", quantity_unit = "g")
+
+    // With 50g serving weight, 10g serving -> 20g per 100g
+    val res1 = quantityAndPer100WithUnit(obj, Some(50.0))
+    assert(res1.serving == "10 g")
+    assert(res1.per100 == "20 g")
+
+    // Without serving weight, per100 is n/a
+    val res2 = quantityAndPer100WithUnit(obj, None)
+    assert(res2.serving == "10 g")
+    assert(res2.per100 == "n/a")
+
+    // With explicit per 100
+    val objExplicit = js.Dynamic.literal(quantity = "10", quantity_per_100 = "15", quantity_unit = "g")
+    val res3 = quantityAndPer100WithUnit(objExplicit, Some(50.0))
+    assert(res3.serving == "10 g")
+    assert(res3.per100 == "15 g")
+  }
+
   test("extractNutritionFacts extracts all fields correctly") {
     val input = js.Dynamic.literal(
       nutrition_facts_label = js.Dynamic.literal(
@@ -136,6 +173,17 @@ class JsonUtilsTest extends FunSuite {
     assert(res.nutrients.head.name == "Calcium")
     assert(res.nutrients.head.quantity.serving == "300 mg")
     assert(res.nutrients.head.percentage == "25")
+  }
+
+  test("extractNutritionFacts handles nested ingredients") {
+    val input = js.Dynamic.literal(
+      result = js.Dynamic.literal(
+        nutrition_facts_label = js.Dynamic.literal(title = "Bread"),
+        ingredients = js.Array("Flour", "Water")
+      )
+    )
+    val res = extractNutritionFacts(input)
+    assert(res.ingredients == "Flour, Water")
   }
 
   test("extractNutritionFacts extracts per100 fields correctly") {
