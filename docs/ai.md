@@ -110,3 +110,11 @@ The project is built using the **Mill** build tool and consists of three modules
 - **Breakpoints:** Uses Tailwind CSS breakpoints via CDN.
 - **Side-by-Side View:** The image preview (or first comparison card) and the nutrition facts result card transition from a vertical stack (`flex-col`) to a side-by-side layout (`flex-row`) at the **medium (`md:`) breakpoint (768px)**.
 - **Comparison Mode:** In comparison mode, the image is hidden, and a single unified comparison nutrition facts card is shown with values from both products side-by-side. The columns are aligned in a rigid 6-column CSS Grid (2 cols for labels, 2 cols per product: "Actual" and "/100g") with vertical borders across all rows (titles, calories, nutrients).
+
+## 8. Frontend Implementation Details
+
+- **Data Processing (`JsonUtils`):** Safely handles dynamic NuExtract JSON. It automatically normalizes units (e.g., converting "oz" to "g") and calculates missing "/100g" values using serving weight to ensure consistent comparisons.
+- **Persistence (`IndexedDBUtils`):** Manages a local `scans` store in IndexedDB. It persists both the extracted data strings and the original image `Blob` objects. Includes logic for migrating legacy history from `localStorage`.
+- **Camera Integration:** Uses the `navigator.mediaDevices` API to capture frames from the device camera, converting them to `File` objects for upload.
+- **State Management:** Uses Laminar `Var` and `Signal` to coordinate multi-file uploads, background polling, and comparison state. The main loop implements recursive polling with a 10s interval and a 5-minute timeout.
+- **Component Architecture:** Separates concerns between atomic row rendering, unified comparison grids, and interactive result cards that support in-place title editing.
