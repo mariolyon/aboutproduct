@@ -1,81 +1,97 @@
 {
   "nutrition_facts_label": {
-      "title": "verbatim-string",
-      "servings_per_container": "integer",
-      "serving_size": [
-          {
-              "quantity": "number",
-              "quantity_unit": "verbatim-string"
-          }
-      ],
-      "calories": "integer",
-      "total_fat": {
+    "title": "string",
+    "servings_per_container": "integer",
+    "serving_size": [
+      {
+        "quantity": "number",
+        "quantity_unit": "string"
+      }
+    ],
+    "calories": "integer",
+    "calories_per_100": "integer",
+    "total_fat": {
+      "quantity": "string",
+      "quantity_unit": "string",
+      "quantity_per_100": "string",
+      "percentage_daily_value": "integer"
+    },
+    "saturated_fat": {
+      "quantity": "string",
+      "quantity_unit": "string",
+      "quantity_per_100": "string",
+      "percentage_daily_value": "integer"
+    },
+    "trans_fat": {
+      "quantity": "integer",
+      "quantity_unit": "string",
+      "quantity_per_100": "string",
+      "percentage_daily_value": "integer"
+    },
+    "cholesterol": {
+      "quantity": "string",
+      "quantity_unit": "string",
+      "quantity_per_100": "string",
+      "percentage_daily_value": "integer"
+    },
+    "sodium": {
+      "quantity": "string",
+      "quantity_unit": "string",
+      "quantity_per_100": "string",
+      "percentage_daily_value": "integer"
+    },
+    "carbs": {
+      "total": {
+        "quantity": "string",
+        "quantity_unit": "string",
+        "quantity_per_100": "string",
+        "percentage_daily_value": "integer"
+      },
+      "fiber": {
+        "quantity": "string",
+        "quantity_unit": "string",
+        "quantity_per_100": "string",
+        "percentage_daily_value": "integer"
+      },
+      "sugars": {
+        "total": {
           "quantity": "string",
-          "quantity_unit": "verbatim-string",
+          "quantity_unit": "string",
+          "quantity_per_100": "string",
           "percentage_daily_value": "integer"
-      },
-      "saturated_fat": {
+        },
+        "added": {
           "quantity": "string",
-          "quantity_unit": "verbatim-string",
+          "quantity_unit": "string",
+          "quantity_per_100": "string",
           "percentage_daily_value": "integer"
-      },
-      "trans_fat": {
-          "quantity": "integer",
-          "quantity_unit": "verbatim-string",
-          "percentage_daily_value": "integer"
-      },
-      "cholesterol": {
-          "quantity": "string",
-          "quantity_unit": "verbatim-string",
-          "percentage_daily_value": "integer"
-      },
-      "sodium": {
-          "quantity": "string",
-          "quantity_unit": "verbatim-string",
-          "percentage_daily_value": "integer"
-      },
-      "carbs": {
-          "total": {
-              "quantity": "string",
-              "quantity_unit": "verbatim-string",
-              "percentage_daily_value": "integer"
-          },
-          "fiber": {
-              "quantity": "string",
-              "quantity_unit": "verbatim-string",
-              "percentage_daily_value": "integer"
-          },
-          "sugars": {
-              "total": {
-                  "quantity": "string",
-                  "quantity_unit": "verbatim-string",
-                  "percentage_daily_value": "integer"
-              },
-              "added": {
-                  "quantity": "string",
-                  "quantity_unit": "verbatim-string",
-                  "percentage_daily_value": "integer"
-              }
-          }
-      },
-      "protein": {
-          "quantity": "string",
-          "quantity_unit": "verbatim-string",
-          "percentage_daily_value": "integer"
-      },
-      "salt": {
-          "quantity": "string",
-          "quantity_unit": "verbatim-string",
-          "percentage_daily_value": "integer"
-      },
-      "nutrients": [
-          {
-              "name": "verbatim-string",
-              "quantity_unit": "verbatim-string",
-              "quantity": "string",
-              "percentage_daily_value": "integer"
-          }
-      ],
-      "small_print": "verbatim-string"
-  }
+        }
+      }
+    },
+    "protein": {
+      "quantity": "string",
+      "quantity_unit": "string",
+      "quantity_per_100": "string",
+      "percentage_daily_value": "integer"
+    },
+    "salt": {
+      "quantity": "string",
+      "quantity_unit": "string",
+      "quantity_per_100": "string",
+      "percentage_daily_value": "integer"
+    },
+    "nutrients": [
+      {
+        "name": "string",
+        "quantity_unit": "string",
+        "quantity": "string",
+        "quantity_per_100": "string",
+        "percentage_daily_value": "integer"
+      }
+    ],
+    "small_print": "string"
+  },
+  "ingredients": [
+    "string"
+  ]
 }
