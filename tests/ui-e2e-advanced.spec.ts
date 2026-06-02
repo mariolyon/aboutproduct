@@ -23,7 +23,8 @@ test('should compare two products and allow title editing', async ({ page }) => 
         nutrition_facts_label: {
           title: "Product A",
           calories: "100",
-          total_fat: { quantity: "1", quantity_unit: "g" }
+          calories_per_100: "200",
+          total_fat: { quantity: "1", quantity_unit: "g", quantity_per_100: "2" }
         }
       }),
     });
@@ -38,7 +39,8 @@ test('should compare two products and allow title editing', async ({ page }) => 
         nutrition_facts_label: {
           title: "Product B",
           calories: "200",
-          total_fat: { quantity: "5", quantity_unit: "g" }
+          calories_per_100: "400",
+          total_fat: { quantity: "5", quantity_unit: "g", quantity_per_100: "10" }
         }
       }),
     });
@@ -74,8 +76,24 @@ test('should compare two products and allow title editing', async ({ page }) => 
 
   // Verify comparison view
   await expect(page.locator('h2:has-text("Product Comparison")')).toBeVisible();
-  await expect(page.locator('.nutrition-card')).toContainText('Product A');
-  await expect(page.locator('.nutrition-card')).toContainText('Product B');
+  const comparisonCard = page.locator('.nutrition-card');
+  await expect(comparisonCard).toContainText('Product A');
+  await expect(comparisonCard).toContainText('Product B');
+
+  // Verify comparison columns (actual vs /100g)
+  await expect(comparisonCard).toContainText('Actual');
+  await expect(comparisonCard).toContainText('/100g');
+
+  // Verify calorie values (serving and per 100g)
+  await expect(comparisonCard).toContainText('100');
+  await expect(comparisonCard).toContainText('200');
+  await expect(comparisonCard).toContainText('400');
+
+  // Verify total fat serving and per 100g values
+  await expect(comparisonCard).toContainText('1 g');
+  await expect(comparisonCard).toContainText('2 g');
+  await expect(comparisonCard).toContainText('5 g');
+  await expect(comparisonCard).toContainText('10 g');
 
   // Exit comparison
   await page.click('button:has-text("Exit Comparison")');

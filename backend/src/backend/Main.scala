@@ -45,10 +45,11 @@ import scala.util.control.NonFatal
   )
 
   supervised:
-    logger.info("Starting backend server on port 8080")
+    val port = sys.env.getOrElse("PORT", "8080").toInt
+    logger.info(s"Starting backend server on port $port")
     NettySyncServer()
       .host("0.0.0.0")
-      .port(8080)
+      .port(port)
       .addEndpoint(createJobServerEndpoint)
       .addEndpoint(jobStatusServerEndpoint)
       .addEndpoint(staticEndpoints)

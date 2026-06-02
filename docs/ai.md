@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **System Instruction:** You are an expert AI software engineer assisting with the "AboutProduct" project. This document is your foundational context. Treat the instructions and architectural constraints below as strict invariants unless explicitly overridden by the user.
 
-After making changes:
+After making changes to the backend or frontend (but not tests):
 - validate that the tests pass. 
 - update the specs in @docs/ai.md, but do not change the instructions before "Project Overview".
 - ensure that the application is left running, by execution of run.sh, to allow for human to verify the changes.
@@ -28,7 +28,7 @@ The project is built using the **Mill** build tool and consists of three modules
 - **Tech Stack:** Scala 3.3.3, Tapir (Netty Sync), Ox.
 - **Concurrency Model:** Uses **direct-style** concurrency via Ox. *Do not use Cats-Effect, ZIO, Monix, or Future-based async programming.*
 - **Key Behaviors:**
-  - Exposes port 8080.
+  - Exposes port 8080 (or configurable via `PORT` environment variable).
   - HTTP errors map explicitly using `Either[(StatusCode, String), String]`.
   - During the build (`mill backend.run`), it triggers the frontend compilation (`fastLinkJS`), copies the output JS and HTML into its resources, and serves them via Tapir's `tapir-files`.
 
@@ -87,7 +87,7 @@ The project is built using the **Mill** build tool and consists of three modules
 - **Link Scala.js:** `mill frontend.fastLinkJS`
 
 ### Environment & Testing
-- **Env Vars:** Requires `PROJECT_ID` and `API_KEY` (source from `docs/.env` via `./run.sh`).
+- **Env Vars:** Requires `PROJECT_ID` and `API_KEY` (source from `docs/.env` via `./run.sh`). Supports an optional `PORT` environment variable (defaults to `8080`) to customize the listening port.
 - **Testing Protocol:** After making changes, test the backend, and then test the end-to-end flow from the frontend.
 - **Specification Maintenance:** Update this document (or relevant `.md` files in `docs/`) after every code change that alters system behavior or architecture.
 

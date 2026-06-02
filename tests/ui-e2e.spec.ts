@@ -51,7 +51,7 @@ test('should upload an image and show nutrition facts', async ({ page }) => {
   await expect(status).toContainText('Select image to begin');
 
   // Upload the file
-  const filePath = path.resolve(__dirname, '../docs/examples/example1.jpeg');
+  const filePath = path.resolve(__dirname, '../docs/examples/example1.jpg');
   await page.setInputFiles('input[type="file"]', filePath);
 
   // Check for intermediate status
@@ -65,4 +65,14 @@ test('should upload an image and show nutrition facts', async ({ page }) => {
   await expect(card).toBeVisible();
   await expect(card).toContainText('Test Milk');
   await expect(page.locator('.nf-calories-value')).toHaveText('120');
+
+  // Test the "View JSON" modal
+  await page.click('button:has-text("View JSON")');
+  await expect(page.locator('h3:has-text("Nutrition Facts JSON")')).toBeVisible();
+  await expect(page.locator('pre')).toContainText('"title": "Test Milk"');
+  await expect(page.locator('pre')).toContainText('"calories": "120"');
+
+  // Close the modal
+  await page.click('button:has-text("Close")');
+  await expect(page.locator('h3:has-text("Nutrition Facts JSON")')).not.toBeVisible();
 });
