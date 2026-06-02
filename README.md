@@ -24,18 +24,17 @@ This is a Full-stack Scala application utilizing cross-compilation for both the 
 - **Shared API:** Tapir Core (cross-compiled JVM + JS) for shared API contracts
 
 ## Prerequisites
-- Java (JDK 17 or later recommended)
+- Java (JDK 21 or later)
 - [Mill Build Tool](https://mill-build.com/)
 - NuExtract API Credentials (set as environment variables or in a `.env` file)
 
 ## How to Run
 
 1. **Set up Environment Variables:**
-   You will need to provide the credentials for the upstream NuExtract API.
-   Copy the provided template and fill in your keys:
+   You need to provide the credentials for the upstream NuExtract API.
+   Copy the provided template and fill in your keys for PROJECT_ID and API_KEY:
    ```bash
-   cp docs/.env.template docs/.env
-   # Edit docs/.env with your PROJECT_ID and API_KEY
+   cp .env.template .env
    ```
 
 2. **Start the Application:**
@@ -43,17 +42,57 @@ This is a Full-stack Scala application utilizing cross-compilation for both the 
    ```bash
    ./run.sh
    ```
-   *Alternatively, you can run `export $(cat docs/.env | xargs) && mill backend.run` manually.*
 
 3. **Open the Application:**
-   Navigate to [http://localhost:8080](http://localhost:8080) in your web browser. 
+   Navigate to [http://localhost:8080](http://localhost:8080) in the web browser. 
 
 4. **Usage:**
    - Upload an image of a product label.
    - The UI will show "uploading..." and then "processing..." while it polls for results.
-   - Once complete, it displays the extracted data as a formatted nutrition label.
+   - Once processed, it displays the extracted data as a formatted nutrition label.
+   - You can upload multiple product label images.
+   - To compare product information click on Compare in the History tab.
+
+## Running Tests
+
+The project includes test suites for both the backend, frontend, and end-to-end (E2E) testing.
+
+You can run all tests (backend, frontend, and UI E2E tests) using the provided script:
+```bash
+./test.sh
+```
+
+### Backend Tests
+To run the JVM backend tests:
+```bash
+mill backend.test
+```
+To run a specific backend test class:
+```bash
+mill backend.test backend.test.MyTestSpec
+```
+
+### Frontend Tests
+To run the Scala.js frontend tests:
+```bash
+mill frontend.test
+```
+
+### End-to-End (E2E) Tests
+To run the cross-module E2E test:
+```bash
+mill backend.test.testOnly backend.E2ETest
+```
+
+### UI E2E Tests (Playwright)
+To run the browser-based UI E2E tests:
+```bash
+npm install
+npx playwright install
+npm run test:ui
+```
 
 ## Project Architecture
-- **`shared/`**: Contains Tapir endpoint descriptors. Cross-compiled for both JVM and Scala.js to ensure the backend and frontend agree on the API contract.
-- **`backend/`**: JVM module. Serves the static compiled frontend files, proxies extraction requests to the NuExtract API, and manages job statuses.
-- **`frontend/`**: Scala.js module. A Laminar-based single-page application handling image uploads, preview, polling, and data rendering.
+- **`shared/`**: Contains Tapir endpoint descriptors. Cross-compiled for both JVM and Scala.js to ensure the backend and frontend share the API contract.
+- **`backend/`**: JVM module. Proxies extraction and job status requests to the NuExtract API, and serves the static/compiled frontend files,
+- **`frontend/`**: Scala.js module. A Laminar-based single-page application handling image uploads, preview, polling the backend, and data rendering.

@@ -3,7 +3,7 @@ package backend
 import ujson.Obj
 import scala.util.control.NonFatal
 
-object NuExtractParser:
+object NuExtractResponseBodyParser:
   def parseJobId(responseBody: String): String =
     val json = ujson.read(responseBody)
     val maybeJobId = json match

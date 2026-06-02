@@ -2,6 +2,6 @@
 echo "#RUN"
 set -euoa pipefail
 
-source ./docs/.env
+source "$(git rev-parse --show-toplevel)/.env"
 
 mill backend.run

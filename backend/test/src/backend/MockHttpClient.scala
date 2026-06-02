@@ -16,15 +16,15 @@ class MockHttpClient extends HttpClient:
   var responseToReturn: HttpResponse[String] = null
   var exceptionToThrow: Throwable = null
 
-  override def cookieHandler(): Optional[CookieHandler] = Optional.empty()
-  override def connectTimeout(): Optional[Duration] = Optional.empty()
-  override def followRedirects(): HttpClient.Redirect = HttpClient.Redirect.NEVER
-  override def proxy(): Optional[ProxySelector] = Optional.empty()
-  override def sslContext(): SSLContext = null
-  override def sslParameters(): SSLParameters = null
-  override def authenticator(): Optional[Authenticator] = Optional.empty()
-  override def version(): HttpClient.Version = HttpClient.Version.HTTP_1_1
-  override def executor(): Optional[Executor] = Optional.empty()
+  override def cookieHandler: Optional[CookieHandler] = Optional.empty()
+  override def connectTimeout: Optional[Duration] = Optional.empty()
+  override def followRedirects: HttpClient.Redirect = HttpClient.Redirect.NEVER
+  override val proxy: Optional[ProxySelector] = Optional.empty()
+  override val sslContext: SSLContext = null
+  override val sslParameters: SSLParameters = null
+  override val authenticator: Optional[Authenticator] = Optional.empty()
+  override val version: HttpClient.Version = HttpClient.Version.HTTP_1_1
+  override val executor: Optional[Executor] = Optional.empty()
   
   override def send[T](request: HttpRequest, responseBodyHandler: HttpResponse.BodyHandler[T]): HttpResponse[T] =
     lastRequest = request

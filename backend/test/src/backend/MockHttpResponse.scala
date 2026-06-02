@@ -6,11 +6,11 @@ import java.util.Optional
 import javax.net.ssl.SSLSession
 
 class MockHttpResponse(statusCodeValue: Int, bodyValue: String) extends HttpResponse[String]:
-  override def statusCode(): Int = statusCodeValue
-  override def request(): HttpRequest = null
-  override def previousResponse(): Optional[HttpResponse[String]] = Optional.empty()
-  override def headers(): HttpHeaders = null
-  override def body(): String = bodyValue
-  override def sslSession(): Optional[SSLSession] = Optional.empty()
-  override def uri(): URI = null
-  override def version(): HttpClient.Version = HttpClient.Version.HTTP_1_1
+  override val statusCode: Int = statusCodeValue
+  override val request: HttpRequest = null
+  override val previousResponse: Optional[HttpResponse[String]] = Optional.empty()
+  override val headers: HttpHeaders = null
+  override val body: String = bodyValue
+  override val sslSession: Optional[SSLSession] = Optional.empty()
+  override val uri: URI = null
+  override val version: HttpClient.Version = HttpClient.Version.HTTP_1_1
