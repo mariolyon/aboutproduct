@@ -121,26 +121,3 @@ object IndexedDBUtils:
 
       promise.future
     }
-
-  def migrateFromLocalStorage(): Future[Unit] =
-    val HistoryKey = "aboutproduct_history"
-    val stored = dom.window.localStorage.getItem(HistoryKey)
-    if stored != null && stored.nonEmpty then
-      try
-        val arr = js.JSON.parse(stored).asInstanceOf[js.Array[js.Dynamic]]
-        val items = arr.toSeq.map { item =>
-          HistoryItem(
-            id = item.selectDynamic("id").asInstanceOf[String],
-            timestamp = item.selectDynamic("timestamp").asInstanceOf[Double],
-            title = item.selectDynamic("title").asInstanceOf[String],
-            dataStr = item.selectDynamic("dataStr").asInstanceOf[String],
-            imageBlob = None,
-            status = "completed"
-          )
-        }
-        // Save all to IndexedDB
-        Future.sequence(items.map(saveItem)).map { _ =>
-          dom.window.localStorage.removeItem(HistoryKey)
-        }
-      catch case _ => Future.successful(())
-    else Future.successful(())

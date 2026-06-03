@@ -193,7 +193,7 @@ import frontend.components.*
     future.failed.foreach(_ => if isMain then status.set("Failed"))
 
   // Initialize History from IndexedDB and resume polling for in-progress jobs
-  IndexedDBUtils.migrateFromLocalStorage().flatMap(_ => IndexedDBUtils.loadHistory()).foreach { history =>
+  IndexedDBUtils.loadHistory().foreach { history =>
     scanHistory.set(history)
     val processingJobs = history.filter(_.status == "processing")
     if processingJobs.nonEmpty then

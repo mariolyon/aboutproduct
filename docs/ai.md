@@ -114,7 +114,7 @@ The project is built using the **Mill** build tool and consists of three modules
 ## 8. Frontend Implementation Details
 
 - **Data Processing (`JsonUtils`):** Safely handles dynamic NuExtract JSON. It automatically normalizes units (e.g., converting "oz" to "g") and calculates missing "/100g" values using serving weight to ensure consistent comparisons.
-- **Persistence (`IndexedDBUtils`):** Manages a local `scans` store in IndexedDB. It persists both the extracted data strings and the original image `Blob` objects. Includes logic for migrating legacy history from `localStorage`.
+- **Persistence (`IndexedDBUtils`):** Manages a local `scans` store in IndexedDB. It persists both the extracted data strings and the original image `Blob` objects.
 - **Camera Integration:** Uses the `navigator.mediaDevices` API to capture frames from the device camera, converting them to `File` objects for upload.
 - **State Management:** Uses Laminar `Var` and `Signal` to coordinate multi-file uploads, background polling, and comparison state. The main loop implements recursive polling with a 10s interval and a 5-minute timeout.
 - **Component Architecture:** Separates concerns between distinct UI sections. Each Laminar component (such as `AppBanner`, `ActionBar`, `ScanHistory`, `CameraViewfinder`, `ImagePreview`, `NutritionFactsCard`, `ComparisonView`, and `JsonModal`) is extracted into its own file as an object under the `frontend.components` package, exposing an `apply` method.
