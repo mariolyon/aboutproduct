@@ -84,12 +84,21 @@ To run the cross-module E2E test:
 mill backend.test.testOnly backend.E2ETest
 ```
 
-### UI E2E Tests (Playwright)
-To run the browser-based UI E2E tests:
+### UI E2E & Snapshot Tests (Playwright)
+To run the browser-based UI E2E and visual snapshot tests:
 ```bash
 npm install
 npx playwright install
 npm run test:ui
+```
+
+To run only the visual snapshot tests or update baseline screenshots:
+```bash
+# Run only snapshot tests
+npx playwright test tests/ui-snapshots.spec.ts
+
+# Update baseline screenshots if layout changes intentionally
+npx playwright test tests/ui-snapshots.spec.ts --update-snapshots
 ```
 
 ## Project Architecture

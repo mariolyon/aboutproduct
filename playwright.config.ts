@@ -7,6 +7,9 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: 1,
   reporter: 'list',
+  expect: {
+    toHaveScreenshot: { maxDiffPixels: 100 },
+  },
   use: {
     baseURL: 'http://localhost:8081',
     trace: 'on-first-retry',
