@@ -12,6 +12,7 @@ import scala.scalajs.js.timers.setTimeout
 import frontend.models.*
 import frontend.utils.JsonUtils.*
 import frontend.utils.IndexedDBUtils
+import frontend.utils.PollingUtils
 import frontend.components.*
 
 @main def app(): Unit =
@@ -56,92 +57,6 @@ import frontend.components.*
       }
     }
 
-  def pollJobStatus(jobId: String, isMain: Boolean): Unit =
-    val pollDelayMs = 10000
-    val maxPollingDurationMs = 5 * 60 * 1000
-    val startedAtMs = js.Date.now()
-
-    def markAsFailed(): Unit =
-      activeJobIds.update(_ - jobId)
-      scanHistory.update { history =>
-        history.map { item =>
-          if item.id == jobId then
-            val updated = item.copy(status = "failed")
-            IndexedDBUtils.saveItem(updated)
-            updated
-          else item
-        }
-      }
-      if isMain then status.set("Failed")
-
-    def continuePolling(): Unit =
-      if activeJobIds.now().contains(jobId) then
-        setTimeout(pollDelayMs):
-          pollOnce()
-
-    def pollOnce(): Unit =
-      if !activeJobIds.now().contains(jobId) then ()
-      else if js.Date.now() - startedAtMs > maxPollingDurationMs then
-        markAsFailed()
-      else
-        val future = dom.fetch(s"/api/jobs/$jobId").toFuture
-
-        future.foreach { response =>
-          response.status.toInt match
-            case 200 =>
-              val payloadFuture = response.text().toFuture
-              payloadFuture.foreach { payload =>
-                try
-                  val parsed = js.JSON.parse(payload).asInstanceOf[js.Dynamic]
-                  if hasCompletedResult(parsed) then
-                    val nutritionFacts = extractNutritionFacts(parsed)
-                    val title = nutritionFacts.title
-                    val finalTitle = if title.nonEmpty && title != "n/a" then title else s"Scan ${new js.Date().toLocaleTimeString()}"
-
-                    activeJobIds.update(_ - jobId)
-                    scanHistory.update { history =>
-                      history.map { item =>
-                        if item.id == jobId then
-                          val updated = item.copy(
-                            status = "completed",
-                            title = finalTitle,
-                            dataStr = payload
-                          )
-                          IndexedDBUtils.saveItem(updated)
-                          updated
-                        else item
-                      }
-                    }
-
-                    if isMain then
-                      extractionResult.set(Some(parsed))
-                      currentResultId.set(Some(jobId))
-                      status.set("Analysis complete")
-                  else if isProcessingStatus(parsed) then
-                    if isMain then status.set("processing ...")
-                    continuePolling()
-                  else
-                    if isMain then status.set("processing ...")
-                    continuePolling()
-                catch
-                  case _: Throwable =>
-                    markAsFailed()
-              }
-              payloadFuture.failed.foreach { _ =>
-                markAsFailed()
-              }
-            case 204 =>
-              if isMain then status.set("processing ...")
-              continuePolling()
-            case _ =>
-              markAsFailed()
-        }
-
-        future.failed.foreach { _ =>
-          markAsFailed()
-        }
-
-    pollOnce()
 
   def setSelectedImage(maybeFile: Option[dom.File]): Unit =
     imagePreviewUrl.now().foreach(dom.URL.revokeObjectURL)
@@ -173,9 +88,9 @@ import frontend.components.*
       val cameraFuture = mediaDevices.getUserMedia(constraints).toFuture
 
       cameraFuture.foreach { stream =>
-          videoStreamRef.set(Some(stream))
-          cameraActive.set(true)
-          status.set("Camera ready")
+        videoStreamRef.set(Some(stream))
+        cameraActive.set(true)
+        status.set("Camera ready")
       }
 
       cameraFuture.failed.foreach { _ =>
@@ -272,7 +187,7 @@ import frontend.components.*
             updated
           }
 
-          pollJobStatus(normalizedJobId, isMain)
+          PollingUtils.pollJobStatus(normalizedJobId, isMain, activeJobIds, scanHistory, status, extractionResult, currentResultId)
       case Left(_) => if isMain then status.set("Failed")
     }
     future.failed.foreach(_ => if isMain then status.set("Failed"))
@@ -285,7 +200,7 @@ import frontend.components.*
       activeJobIds.update(_ ++ processingJobs.map(_.id))
       processingJobs.foreach { job =>
         println(s"Resuming polling for job: ${job.id}")
-        pollJobStatus(job.id, isMain = false)
+        PollingUtils.pollJobStatus(job.id, isMain = false, activeJobIds, scanHistory, status, extractionResult, currentResultId)
       }
   }
 
@@ -352,8 +267,8 @@ import frontend.components.*
           }
       }
     ),
-    child.maybe <-- status.signal.combineWith(selectedImage.signal).map { case (s, imgOpt) =>
-      Option.when(s.nonEmpty && imgOpt.isEmpty)(h2(cls := "status-text", s))
+    child.maybe <-- status.signal.combineWith(selectedImage.signal).map {
+      case (s, imgOpt) => Option.when(s.nonEmpty && imgOpt.isEmpty)(h2(cls := "status-text", s))
     },
     CameraViewfinder(
       cameraActive = cameraActive.signal,
