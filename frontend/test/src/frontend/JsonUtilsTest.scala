@@ -4,7 +4,7 @@ import scala.scalajs.js
 import munit.FunSuite
 
 class JsonUtilsTest extends FunSuite {
-  import JsonUtils.*
+  import frontend.utils.JsonUtils.*
 
   test("isDefined returns false for undefined and null") {
     assert(!isDefined(js.undefined.asInstanceOf[js.Dynamic]))
