@@ -22,7 +22,7 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'PORT=8081 ./run.sh',
+    command: 'PORT=8081 ./scripts/run.sh',
     url: 'http://localhost:8081',
     reuseExistingServer: !process.env.CI,
     stdout: 'pipe',

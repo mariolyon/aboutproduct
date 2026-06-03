@@ -40,7 +40,7 @@ This is a Full-stack Scala application utilizing cross-compilation for both the 
 2. **Start the Application:**
    You can use the provided run script which automatically sources the `.env` file and starts the server:
    ```bash
-   ./run.sh
+   ./scripts/run.sh
    ```
 
 3. **Open the Application:**
@@ -59,7 +59,7 @@ The project includes test suites for both the backend, frontend, and end-to-end 
 
 You can run all tests (backend, frontend, and UI E2E tests) using the provided script:
 ```bash
-./test.sh
+./scripts/test.sh
 ```
 
 ### Backend Tests

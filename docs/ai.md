@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 After making changes to the backend or frontend (but not tests):
 - validate that the tests pass. 
 - update the specs in @docs/ai.md, but do not change the instructions before "Project Overview".
-- ensure that the application is left running, by execution of run.sh, to allow for human to verify the changes.
+- ensure that the application is left running, by execution of scripts/run.sh, to allow for human to verify the changes.
 
 ## 1. Project Overview
 
@@ -76,7 +76,7 @@ The project is built using the **Mill** build tool and consists of three modules
 
 ### Core Commands (Mill)
 - **Compile all:** `mill _.compile`
-- **Run Backend:** `mill backend.run` (or `./run.sh` to include `.env` variables)
+- **Run Backend:** `mill backend.run` (or `./scripts/run.sh` to include `.env` variables)
 - **Run Tests:**
   - Backend: `mill backend.test`
   - Frontend: `mill frontend.test`
@@ -87,7 +87,7 @@ The project is built using the **Mill** build tool and consists of three modules
 - **Link Scala.js:** `mill frontend.fastLinkJS`
 
 ### Environment & Testing
-- **Env Vars:** Requires `PROJECT_ID` and `API_KEY` (source from `docs/.env` via `./run.sh`). Supports an optional `PORT` environment variable (defaults to `8080`) to customize the listening port.
+- **Env Vars:** Requires `PROJECT_ID` and `API_KEY` (source from `.env` via `./scripts/run.sh`). Supports an optional `PORT` environment variable (defaults to `8080`) to customize the listening port.
 - **Testing Protocol:** After making changes, test the backend, and then test the end-to-end flow from the frontend.
 - **Specification Maintenance:** Update this document (or relevant `.md` files in `docs/`) after every code change that alters system behavior or architecture.
 

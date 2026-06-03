@@ -3,6 +3,9 @@
 # Exit immediately if a command exits with a non-zero status
 set -euo pipefail
 
+ROOT="$(git rev-parse --show-toplevel)"
+cd ${ROOT}
+
 echo "=== Running Backend Tests ==="
 mill backend.test
 

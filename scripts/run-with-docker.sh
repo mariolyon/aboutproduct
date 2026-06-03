@@ -2,9 +2,11 @@
 echo "#RUN"
 set -euo pipefail
 
-./build.sh
+ROOT="$(git rev-parse --show-toplevel)"
+cd ${ROOT}
 
+./scripts/build.sh
 docker run -it --rm \
-  --env-file "$(git rev-parse --show-toplevel)/.env" \
+  --env-file ".env" \
   -p 8080:8080 \
   ghcr.io/mariolyon/aboutproduct:latest
