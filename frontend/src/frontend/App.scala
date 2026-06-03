@@ -26,10 +26,6 @@ import frontend.components.*
   val showJsonModal = Var(false)
   val modalJson = Var("")
 
-  // Initialize History from IndexedDB
-  IndexedDBUtils.migrateFromLocalStorage().flatMap(_ => IndexedDBUtils.loadHistory()).foreach { history =>
-    scanHistory.set(history)
-  }
   val comparisonResult = Var(Option.empty[js.Dynamic])
   val comparisonResultId = Var(Option.empty[String])
   val cameraActive = Var(false)
@@ -281,6 +277,18 @@ import frontend.components.*
     }
     future.failed.foreach(_ => if isMain then status.set("Failed"))
 
+  // Initialize History from IndexedDB and resume polling for in-progress jobs
+  IndexedDBUtils.migrateFromLocalStorage().flatMap(_ => IndexedDBUtils.loadHistory()).foreach { history =>
+    scanHistory.set(history)
+    val processingJobs = history.filter(_.status == "processing")
+    if processingJobs.nonEmpty then
+      activeJobIds.update(_ ++ processingJobs.map(_.id))
+      processingJobs.foreach { job =>
+        println(s"Resuming polling for job: ${job.id}")
+        pollJobStatus(job.id, isMain = false)
+      }
+  }
+
   val appElement = div(
     cls := "max-w-[1200px] w-[96vw] mx-auto text-center",
     AppBanner(),
@@ -310,6 +318,12 @@ import frontend.components.*
           }
       },
       onViewItem = { item =>
+        val newStatus = item.status match
+          case "completed" => "Analysis complete"
+          case "processing" => "processing ..."
+          case "failed" => "Failed"
+          case _ => "Analysis complete"
+        status.set(newStatus)
         extractionResult.set(Some(item.parsedData))
         currentResultId.set(Some(item.id))
         item.imageBlob.foreach { blob =>

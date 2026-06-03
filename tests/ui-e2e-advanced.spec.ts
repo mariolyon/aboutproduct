@@ -114,4 +114,18 @@ test('should compare two products and allow title editing', async ({ page }) => 
   // Verify updated title in history
   await page.click('button:has-text("History")');
   await expect(page.locator('.flex.justify-between.items-center.p-3', { hasText: newTitle })).toBeVisible();
+
+  // Test viewing a history item and verifying its status text
+  const historyItemOther = page.locator('.flex.justify-between.items-center.p-3', { hasText: otherProduct });
+  await historyItemOther.locator('button:has-text("View")').click();
+
+  // Verify that the history drawer is closed (onViewItem sets showHistory to false)
+  await expect(page.locator('h3:has-text("Scan History")')).not.toBeVisible();
+
+  // Verify that the status text above the image is "Analysis complete"
+  const status = page.locator('h2.status-text').first();
+  await expect(status).toHaveText('Analysis complete');
+
+  // Verify that the card now shows the selected other product
+  await expect(page.locator('.nutrition-card h2')).toContainText(otherProduct);
 });

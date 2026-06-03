@@ -9,7 +9,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 After making changes to the backend or frontend (but not tests):
 - validate that the tests pass. 
 - update the specs in @docs/ai.md, but do not change the instructions before "Project Overview".
-- ensure that the application is left running, by execution of scripts/run.sh, to allow for human to verify the changes.
 
 ## 1. Project Overview
 
@@ -95,11 +94,12 @@ The project is built using the **Mill** build tool and consists of three modules
 
 ### History Drawer & Comparison Mode
 - **State Tracking:** Tracks `currentResultId` (primary), `comparisonResultId` (comparison), and `activeJobIds` (background).
-- **History Items:** Statuses are `completed`, `processing`, or `failed`.
+- **History Items:** Statuses are `completed`, `processing`, or `failed`. If the application starts or is reloaded and there are items with a `processing` status in IndexedDB, the application automatically adds them to the `activeJobIds` and resumes polling for them in the background.
 - **View/Compare Logic:** 
     - "View" is disabled if not completed or already in primary slot (unless in comparison mode).
     - "Compare" is disabled if not completed, no item is currently viewed, or item is already in a slot.
     - Clicking "View" during comparison clears the comparison state.
+    - Viewing an item from history correctly updates the main status text (e.g., to "Analysis complete" or "processing ...") above the image preview.
 
 ### Title Editing
 - **Interactive Renaming:** The product title in the nutrition facts card is clickable.
